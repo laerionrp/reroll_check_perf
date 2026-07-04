@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Reroll Check Perf — D20 plate logo</title>
+  <desc id="desc">Original metallic d20 shaped emblem with a weathered license plate reading RCP-20.</desc>
+  <defs>
+    <radialGradient id="redCore" cx="50%" cy="48%" r="60%">
+      <stop offset="0%" stop-color="#c42d20"/>
+      <stop offset="45%" stop-color="#5b140f"/>
+      <stop offset="100%" stop-color="#150707"/>
+    </radialGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1e7d7"/>
+      <stop offset="18%" stop-color="#8b8276"/>
+      <stop offset="36%" stop-color="#fff6e8"/>
+      <stop offset="56%" stop-color="#4e4a46"/>
+      <stop offset="78%" stop-color="#d1c5b4"/>
+      <stop offset="100%" stop-color="#2b2825"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e7dfd0"/>
+      <stop offset="42%" stop-color="#bdb3a4"/>
+      <stop offset="100%" stop-color="#7e756b"/>
+    </linearGradient>
+    <linearGradient id="plateEdge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3e0"/>
+      <stop offset="45%" stop-color="#6d6259"/>
+      <stop offset="100%" stop-color="#201d1a"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="13" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+    <filter id="innerGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <pattern id="grime" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M7 11h20M3 32h14M31 6h6M25 28h12" stroke="#281b17" stroke-width="2" opacity=".12"/>
+      <circle cx="34" cy="35" r="2.2" fill="#1a100d" opacity=".14"/>
+      <circle cx="12" cy="23" r="1.4" fill="#1a100d" opacity=".16"/>
+    </pattern>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <!-- d20 silhouette, no extra outer frame -->
+    <polygon points="256,20 456,146 456,366 256,492 56,366 56,146" fill="url(#redCore)" stroke="#2b0b08" stroke-width="8"/>
+
+    <!-- d20 facets -->
+    <g fill="none" stroke="url(#steel)" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M256 20 L256 492" stroke-width="7"/>
+      <path d="M56 146 L456 366" stroke-width="7"/>
+      <path d="M456 146 L56 366" stroke-width="7"/>
+      <path d="M56 146 L256 20 L456 146 L256 220 Z" stroke-width="9"/>
+      <path d="M56 366 L256 492 L456 366 L256 292 Z" stroke-width="9"/>
+      <path d="M88 164 L170 330 L256 220 L342 330 L424 164" stroke-width="5" opacity=".9"/>
+      <path d="M90 350 L170 182 L256 292 L342 182 L422 350" stroke-width="5" opacity=".9"/>
+      <path d="M170 182 L342 182 M170 330 L342 330" stroke-width="5" opacity=".8"/>
+    </g>
+
+    <!-- subtle red highlight lines -->
+    <g fill="none" stroke="#ff3b25" stroke-width="2" opacity=".42">
+      <path d="M256 32 L444 150"/>
+      <path d="M68 360 L256 480"/>
+      <path d="M444 360 L256 480"/>
+      <path d="M68 150 L256 32"/>
+    </g>
+
+    <!-- plate, embedded over d20 -->
+    <g>
+      <rect x="82" y="166" width="348" height="182" rx="18" fill="url(#plateEdge)"/>
+      <rect x="94" y="178" width="324" height="158" rx="11" fill="url(#plate)"/>
+      <rect x="102" y="186" width="308" height="142" rx="7" fill="url(#grime)" opacity=".75"/>
+      <rect x="102" y="186" width="308" height="142" rx="7" fill="none" stroke="#443d37" stroke-width="3" opacity=".8"/>
+
+      <!-- small screws -->
+      <g fill="#1e1d1b" stroke="#c9b9a3" stroke-width="2">
+        <circle cx="115" cy="199" r="8"/>
+        <circle cx="397" cy="199" r="8"/>
+        <circle cx="115" cy="315" r="8"/>
+        <circle cx="397" cy="315" r="8"/>
+      </g>
+      <g stroke="#c9b9a3" stroke-width="1.6" opacity=".75">
+        <path d="M110 199h10M392 199h10M110 315h10M392 315h10"/>
+      </g>
+
+      <!-- plate text -->
+      <text x="256" y="213" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="23" letter-spacing="3" fill="#8e2118">SAN ANDREAS</text>
+      <text x="256" y="286" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="86" letter-spacing="5" fill="#151515" stroke="#5a524b" stroke-width="1.2">RCP-20</text>
+      <text x="256" y="316" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="23" letter-spacing="2" fill="#8e2118">REROLL CHECK PERF</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventaire - Reroll Check Perf</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="images/rcp-logo.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="images/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/favicon-192x192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#74220f">
+</head>
+
+<body class="garage-page">
+  <header>Inventaire</header>
+
+  <main>
+    <div class="tabs">
+      <a class="tab" href="index.html">Contrôle tarif</a>
+      <a class="tab active" href="login.html">Inventaire</a>
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <div class="card">
+      <h2>Actions</h2>
+
+      <div class="grid">
+        <button onclick="toggleCardForm()">Acheter une carte grise</button>
+        <button onclick="toggleVehicleForm()">Ajouter un véhicule</button>
+      </div>
+
+      <div id="cardForm" class="inline-form" style="display:none;">
+        <input id="cardDate" placeholder="Date achat ex : 03/07/2026">
+        <input id="cardPrice" placeholder="Prix payé">
+        <input id="cardComment" placeholder="Commentaire">
+        <button onclick="buyCard()">Valider l’achat</button>
+      </div>
+
+      <div id="vehicleForm" class="inline-form" style="display:none;">
+        <select id="cardSelect"></select>
+        <select id="vehicleSelect"></select>
+        <input id="customName" placeholder="Nom personnalisé">
+        <input id="plate" placeholder="Plaque">
+        <input id="dateAchat" placeholder="Date achat ex : 03/07/2026">
+        <button onclick="addVehicle()">Ajouter</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="grid stats-grid">
+        <div class="stat"><span>Cartes possédées</span><strong id="cardsTotal">-</strong></div>
+        <div class="stat"><span>Cartes utilisées</span><strong id="cardsUsed">-</strong></div>
+        <div class="stat"><span>Cartes libres</span><strong id="cardsFree">-</strong></div>
+        <div class="stat"><span>Dépensé en cartes</span><strong id="cardsSpent">-</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Inventaire</h2>
+      <div id="vehicleList"></div>
+    </div>
+  </main>
+
+  <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
+
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/garage.js"></script>
+</body>
+</html>

@@ -1,0 +1,691 @@
+  :root {
+    --bg: #1e1e1e;
+    --card: #333333;
+    --card-dark: #292929;
+    --vehicle-card: #4a372e;
+    --border: #5a4a43;
+
+    --accent: #ff7629;
+    --accent-red: #d63b20;
+    --accent-dark: #74220f;
+    --section-orange: #bf4a1c;
+    --section-red: #7a2415;
+
+    --text: #f5f5f5;
+    --muted: #c7b8b0;
+    --danger: #ff7777;
+    --separator: rgba(255,255,255,0.25);
+    --input-bg: #e9e9e9;
+    --input-text: #1e1e1e;
+  }
+
+  body.light {
+    --bg: #f3efe9;
+    --card: #ffffff;
+    --card-dark: #f7f2ec;
+    --vehicle-card: #fff1e6;
+    --border: #d7b8a5;
+
+    --accent: #c8551b;
+    --accent-red: #b8321f;
+    --accent-dark: #a83e18;
+    --section-orange: #d45b22;
+    --section-red: #9c341d;
+
+    --text: #24201e;
+    --muted: #6f625a;
+    --danger: #b00020;
+    --separator: rgba(80,50,30,0.25);
+    --input-bg: #ffffff;
+    --input-text: #24201e;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+  }
+
+  header {
+    background: var(--accent-dark);
+    padding: 20px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  main {
+    max-width: 1500px;
+    margin: 30px auto;
+    padding: 0 20px 30px;
+  }
+
+  h2 {
+    margin-top: 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 10px 16px;
+    text-decoration: none;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .garage-page .tab.active {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+  }
+
+  .card,
+  .vehicle {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    min-width: 0;
+  }
+
+  .card {
+    background: var(--card);
+  }
+
+  .vehicle {
+    background: var(--vehicle-card);
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+
+  input,
+  select,
+  button {
+    padding: 11px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 15px;
+    background: var(--input-bg);
+    color: var(--input-text);
+    min-width: 0;
+  }
+
+  input,
+  select {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  button {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+    gap: 15px;
+    min-width: 0;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .vehicle-info {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .info-item {
+    position: relative;
+    padding: 0 24px;
+    min-width: 0;
+  }
+
+  .info-item:first-child {
+    padding-left: 0;
+  }
+
+  .info-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    background: var(--separator);
+  }
+
+  .info-label {
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+
+  .price,
+  .info-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  .perfs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin: 18px 0;
+    min-width: 0;
+  }
+
+  .perf,
+  .perf-block {
+    background: var(--card-dark);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .perf h4,
+  .perf-block h3 {
+    margin: 0;
+    padding: 10px 12px;
+    color: #fff;
+    text-transform: uppercase;
+    text-align: center;
+    font-size: 15px;
+  }
+
+  .public-page .perf-block h3 {
+    background: var(--section-orange);
+  }
+
+  .garage-page .perf h4 {
+    background: var(--section-red);
+  }
+
+  .perf-row {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: 12px;
+    align-items: center;
+    padding: 7px 12px;
+    margin: 0;
+    font-weight: normal;
+    background: transparent;
+    border: none;
+    min-width: 0;
+  }
+
+  .perf-row input {
+    width: auto;
+    margin: 0 7px 0 0;
+  }
+
+  .perf-row span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .perf-row span:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .total,
+  .expense-box {
+    background: var(--accent-dark);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 22px;
+    font-weight: bold;
+    line-height: 1.5;
+    color: #fff;
+  }
+
+  .total-row,
+  .expense-row {
+    display: grid;
+    grid-template-columns: 1fr 170px;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .total-row span:last-child,
+  .expense-row span:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .total-main,
+  .expense-main {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.25);
+    color: #ffcf9f;
+    font-size: 24px;
+  }
+
+  .stat {
+    background: var(--card-dark);
+    border-radius: 10px;
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .stat span {
+    display: block;
+    color: var(--muted);
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  .stat strong {
+    color: var(--accent);
+    font-size: 28px;
+    overflow-wrap: anywhere;
+  }
+
+  .garage-page #vehicleList {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .vehicle h3 {
+    margin: 0;
+  }
+
+  .vehicle-title-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 18px;
+    background: rgba(0,0,0,0.08);
+  }
+
+  .vehicle-title-box h3 {
+    margin: 0;
+    padding: 10px 12px;
+    background: var(--section-red);
+    color: #fff;
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: .5px;
+    overflow-wrap: anywhere;
+  }
+
+  .vehicle-title-box .muted {
+    margin: 0;
+    padding: 12px 18px;
+    color: var(--text);
+    opacity: .85;
+    font-size: 17px;
+  }
+
+  .line {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 18px;
+    align-items: center;
+    padding: 12px 0;
+    min-width: 0;
+  }
+
+  .line input {
+    margin-bottom: 0;
+  }
+
+  .last-info {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--separator);
+    margin-bottom: 18px;
+  }
+
+  .section-separator {
+    border-top: 1px solid var(--separator);
+    margin: 15px 0;
+  }
+
+  .sold {
+    opacity: 0.65;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .error {
+    color: var(--danger);
+    font-weight: bold;
+    margin-bottom: 12px;
+  }
+
+  .inline-form {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .inline-form input,
+  .inline-form button {
+    margin-bottom: 0;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--accent);
+    font-size: 24px;
+    font-weight: normal;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.25);
+    z-index: 999;
+  }
+
+  .login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+  }
+
+  .login-box {
+    width: min(420px, 92vw);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .login-box h1 {
+    margin-top: 0;
+    color: var(--accent);
+  }
+
+  /* Grand écran : 3 fiches par ligne */
+  @media (min-width: 1800px) {
+    .garage-page #vehicleList {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .garage-page .vehicle {
+      margin-bottom: 0;
+    }
+  }
+
+  /* Écran large : 2 fiches par ligne */
+  @media (min-width: 1250px) and (max-width: 1799px) {
+    .garage-page #vehicleList {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .garage-page .vehicle {
+      margin-bottom: 0;
+    }
+  }
+
+  /* Tablette / fenêtre moyenne */
+  @media (max-width: 1249px) {
+    main {
+      max-width: 920px;
+    }
+
+    .perfs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vehicle-info {
+      grid-template-columns: 1fr 1fr;
+      row-gap: 22px;
+    }
+
+    .info-item:nth-child(2)::after {
+      display: none;
+    }
+  }
+
+  /* Mobile */
+  @media (max-width: 700px) {
+    body {
+      font-size: 17px;
+    }
+
+    header {
+      padding: 16px 14px;
+      font-size: 24px;
+    }
+
+    main {
+      margin: 16px auto;
+      padding: 0 12px 80px;
+      max-width: 100%;
+    }
+
+    h2 {
+      font-size: 22px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .tab {
+      width: 100%;
+      padding: 13px;
+      font-size: 16px;
+    }
+
+    .card,
+    .vehicle {
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+
+    .grid,
+    .stats-grid,
+    .inline-form,
+    .perfs,
+    .vehicle-info {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    input,
+    select,
+    button {
+      font-size: 16px;
+      padding: 13px;
+    }
+
+    button {
+      width: 100%;
+    }
+
+    .info-item {
+      padding: 0 0 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--separator);
+    }
+
+    .info-item::after {
+      display: none;
+    }
+
+    .info-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .price,
+    .info-value {
+      font-size: 21px;
+    }
+
+    .vehicle-title-box h3 {
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: .25px;
+    }
+
+    .vehicle-title-box .muted {
+      font-size: 16px;
+      line-height: 1.45;
+      padding: 10px 12px;
+    }
+
+    .line {
+      grid-template-columns: 1fr;
+      gap: 6px;
+      padding: 10px 0;
+      font-size: 16px;
+    }
+
+    .perf h4,
+    .perf-block h3 {
+      font-size: 16px;
+      padding: 10px;
+    }
+
+    .perf-row {
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 11px 12px;
+      font-size: 16px;
+    }
+
+    .perf-row span:last-child {
+      min-width: 76px;
+    }
+
+    .total,
+    .expense-box {
+      padding: 16px;
+      font-size: 19px;
+    }
+
+    .total-row,
+    .expense-row {
+      grid-template-columns: 1fr;
+      gap: 2px;
+      padding: 4px 0;
+    }
+
+    .total-row span:last-child,
+    .expense-row span:last-child {
+      text-align: left;
+    }
+
+    .total-main,
+    .expense-main {
+      font-size: 22px;
+    }
+
+    .stat {
+      padding: 15px;
+    }
+
+    .stat strong {
+      font-size: 30px;
+    }
+
+    .theme-toggle {
+      right: 14px;
+      bottom: 14px;
+      width: 46px;
+      height: 46px;
+      font-size: 20px;
+      padding: 0;
+    }
+
+    .login-box {
+      width: min(380px, 92vw);
+      padding: 20px;
+    }
+  }
+
+  /* Très petit écran */
+  @media (max-width: 380px) {
+    .perf-row {
+      grid-template-columns: 1fr;
+      gap: 3px;
+    }
+
+    .perf-row span:last-child {
+      text-align: left;
+      padding-left: 27px;
+    }
+
+    .vehicle-title-box h3 {
+      font-size: 16px;
+    }
+  }
+  @media (max-width: 1249px) {
+  .vehicle-info {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vehicle-info .info-item {
+    padding: 0 24px;
+  }
+
+  .vehicle-info .info-item:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .vehicle-info .info-item:nth-child(even)::after {
+    display: none;
+  }
+}
