@@ -80,7 +80,35 @@ function getPerfBasePrice(vehicle) {
 async function loadData() {
   try {
     clearError();
+
+    const cacheKey = 'rcp_public_data';
+    const cacheTimeKey = 'rcp_public_data_time';
+    const cacheDuration = 24 * 60 * 60 * 1000;
+
+    const cached = localStorage.getItem(cacheKey);
+    const cachedTime = Number(localStorage.getItem(cacheTimeKey)) || 0;
+    const cacheValid = cached && Date.now() - cachedTime < cacheDuration;
+
+    if (cacheValid) {
+      appData = JSON.parse(cached);
+      renderVehicleList();
+
+      api('getPublicData')
+        .then(freshData => {
+          appData = freshData;
+          localStorage.setItem(cacheKey, JSON.stringify(freshData));
+          localStorage.setItem(cacheTimeKey, String(Date.now()));
+          renderVehicleList();
+        })
+        .catch(() => {});
+
+      return;
+    }
+
     appData = await api('getPublicData');
+
+    localStorage.setItem(cacheKey, JSON.stringify(appData));
+    localStorage.setItem(cacheTimeKey, String(Date.now()));
 
     if (!appData.vehicles || appData.vehicles.length === 0) {
       showError('Aucun véhicule trouvé. Vérifie la feuille DATA, colonnes A à D.');
