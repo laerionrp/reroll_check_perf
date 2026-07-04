@@ -1,6 +1,10 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
+const GARAGE_CACHE_KEY = 'rcp_garage_data';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time';
+const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const perfLabelsGarage = {
   blindage: ['20%', '40%', '60%'],
   moteur: ['reprog', '1', '2', '3'],
@@ -60,6 +64,16 @@ function parseStepsGarage(value) {
   }
 }
 
+function saveGarageCache() {
+  localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(data));
+  localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
+}
+
+function clearGarageCache() {
+  localStorage.removeItem(GARAGE_CACHE_KEY);
+  localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
+}
+
 function isAirOrBoatGarage(vehicle) {
   const catalogVehicle = data.catalog.find(v => v.name === String(vehicle.vehicle_name || ''));
 
@@ -97,16 +111,36 @@ function getCurrentPerfPrice(vehicle, perfName, index) {
 async function loadGarage() {
   try {
     setError('');
+
+    const cached = localStorage.getItem(GARAGE_CACHE_KEY);
+    const cachedTime = Number(localStorage.getItem(GARAGE_CACHE_TIME_KEY)) || 0;
+    const cacheValid = cached && Date.now() - cachedTime < GARAGE_CACHE_DURATION;
+
+    if (cacheValid) {
+      data = JSON.parse(cached);
+      renderGarage();
+
+      api('getGarageData', {}, token)
+        .then(freshData => {
+          data = freshData;
+          saveGarageCache();
+          renderGarage();
+        })
+        .catch(() => {});
+
+      return;
+    }
+
     data = await api('getGarageData', {}, token);
+    saveGarageCache();
     renderGarage();
+
   } catch (error) {
     setError(error.message);
 
-    if (
-      error.message.includes('Session') ||
-      error.message.includes('Connexion')
-    ) {
+    if (error.message.includes('Session') || error.message.includes('Connexion')) {
       localStorage.removeItem('garage_token');
+      clearGarageCache();
       window.location.href = 'login.html';
     }
   }
@@ -283,6 +317,7 @@ async function buyCard() {
   try {
     setError('');
     data = await api('addGarageCard', payload, token);
+    saveGarageCache();
 
     document.getElementById('cardDate').value = '';
     document.getElementById('cardPrice').value = '';
@@ -314,6 +349,7 @@ async function addVehicle() {
   try {
     setError('');
     data = await api('addGarageVehicle', payload, token);
+    saveGarageCache();
 
     document.getElementById('customName').value = '';
     document.getElementById('plate').value = '';
@@ -329,12 +365,14 @@ async function addVehicle() {
 async function updateField(cardId, field, value) {
   try {
     setError('');
+
     data = await api('updateGarageField', {
       cardId,
       field,
       value
     }, token);
 
+    saveGarageCache();
     renderGarage();
   } catch (error) {
     setError(error.message);
@@ -359,6 +397,7 @@ async function togglePerf(cardId, perfName, level, checked) {
   try {
     setError('');
     data = await api(action, payload, token);
+    saveGarageCache();
     renderGarage();
   } catch (error) {
     setError(error.message);
@@ -374,12 +413,14 @@ async function sellVehicle(cardId) {
 
   try {
     setError('');
+
     data = await api('sellGarageVehicle', {
       cardId,
       dateVente: date,
       prixVente: price
     }, token);
 
+    saveGarageCache();
     renderGarage();
   } catch (error) {
     setError(error.message);
