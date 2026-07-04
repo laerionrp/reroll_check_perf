@@ -1,7 +1,5 @@
-const API_URL = CONFIG.API_URL;
-
 async function api(action, payload = {}, token = '') {
-  const response = await fetch(API_URL, {
+  const response = await fetch(CONFIG.API_URL, {
     method: 'POST',
     redirect: 'follow',
     headers: {
