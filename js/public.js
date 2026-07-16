@@ -1,14 +1,42 @@
 let appData = null;
 let selectedVehicle = null;
 
+const PUBLIC_CACHE_KEY = 'rcp_public_data';
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time';
+const PUBLIC_CACHE_DURATION = 24 * 60 * 60 * 1000;
+
 const perfLabels = {
   blindage: ['20%', '40%', '60%'],
-  moteur: ['reprog', '1', '2', '3'],
+
   frein: ['rue', 'sport', 'course'],
+
+  moteur: [
+    'reprog',
+    'reprog niv. 1',
+    'reprog niv. 2',
+    'reprog niv. 3'
+  ],
+
   suspension: ['rue', 'sport', 'course'],
-  transmission: ['rue', 'sport', 'course'],
+
+  transmission: [
+    'rue',
+    'sport',
+    'course',
+    'niveau 4'
+  ],
+
   turbo: ['turbo']
 };
+
+const perfOrder = [
+  'blindage',
+  'frein',
+  'moteur',
+  'suspension',
+  'transmission',
+  'turbo'
+];
 
 const searchInput = document.getElementById('search');
 const vehicleSelect = document.getElementById('vehicleSelect');
@@ -49,6 +77,7 @@ function isJobVehicle(vehicle) {
 
 function isAirOrBoatVehicle(vehicle) {
   const dealership = normalize(vehicle.dealership_id);
+
   return dealership === 'air' || dealership === 'boat';
 }
 
@@ -59,7 +88,9 @@ function getVehicleTTC(vehicle) {
     return null;
   }
 
-  return roundUpMoney(priceHT * (1 + appData.tvaVehicle));
+  return roundUpMoney(
+    priceHT * (1 + appData.tvaVehicle)
+  );
 }
 
 function getVehiclePurchaseTotal(vehicle) {
@@ -69,25 +100,50 @@ function getVehiclePurchaseTotal(vehicle) {
     return priceHT;
   }
 
-  return roundUpMoney(priceHT * (1 + appData.tvaVehicle));
+  return roundUpMoney(
+    priceHT * (1 + appData.tvaVehicle)
+  );
 }
 
 function getPerfBasePrice(vehicle) {
   const priceHT = roundUpMoney(vehicle.price);
-  return roundUpMoney(priceHT * (1 + appData.tvaPerf));
+
+  return roundUpMoney(
+    priceHT * (1 + appData.tvaPerf)
+  );
+}
+
+function savePublicCache() {
+  localStorage.setItem(
+    PUBLIC_CACHE_KEY,
+    JSON.stringify(appData)
+  );
+
+  localStorage.setItem(
+    PUBLIC_CACHE_TIME_KEY,
+    String(Date.now())
+  );
 }
 
 async function loadData() {
   try {
     clearError();
 
-    const cacheKey = 'rcp_public_data';
-    const cacheTimeKey = 'rcp_public_data_time';
-    const cacheDuration = 24 * 60 * 60 * 1000;
+    const cached = localStorage.getItem(
+      PUBLIC_CACHE_KEY
+    );
 
-    const cached = localStorage.getItem(cacheKey);
-    const cachedTime = Number(localStorage.getItem(cacheTimeKey)) || 0;
-    const cacheValid = cached && Date.now() - cachedTime < cacheDuration;
+    const cachedTime =
+      Number(
+        localStorage.getItem(
+          PUBLIC_CACHE_TIME_KEY
+        )
+      ) || 0;
+
+    const cacheValid =
+      cached &&
+      Date.now() - cachedTime <
+        PUBLIC_CACHE_DURATION;
 
     if (cacheValid) {
       appData = JSON.parse(cached);
@@ -96,8 +152,7 @@ async function loadData() {
       api('getPublicData')
         .then(freshData => {
           appData = freshData;
-          localStorage.setItem(cacheKey, JSON.stringify(freshData));
-          localStorage.setItem(cacheTimeKey, String(Date.now()));
+          savePublicCache();
           renderVehicleList();
         })
         .catch(() => {});
@@ -106,54 +161,72 @@ async function loadData() {
     }
 
     appData = await api('getPublicData');
+    savePublicCache();
 
-    localStorage.setItem(cacheKey, JSON.stringify(appData));
-    localStorage.setItem(cacheTimeKey, String(Date.now()));
+    if (
+      !appData.vehicles ||
+      appData.vehicles.length === 0
+    ) {
+      showError(
+        'Aucun véhicule trouvé. Vérifie la feuille DATA.'
+      );
 
-    if (!appData.vehicles || appData.vehicles.length === 0) {
-      showError('Aucun véhicule trouvé. Vérifie la feuille DATA, colonnes A à D.');
       return;
     }
 
     renderVehicleList();
+
   } catch (error) {
     showError('Erreur API : ' + error.message);
   }
 }
 
 function renderVehicleList() {
-  if (!appData) return;
+  if (!appData) {
+    return;
+  }
 
   const filter = normalize(searchInput.value);
+
   vehicleSelect.innerHTML = '';
 
-  const filteredVehicles = appData.vehicles.filter(vehicle => {
-    return (
-      normalize(vehicle.name).includes(filter) ||
-      normalize(vehicle.category).includes(filter) ||
-      normalize(vehicle.dealership_id).includes(filter)
-    );
-  });
+  const filteredVehicles =
+    appData.vehicles.filter(vehicle => {
+      return (
+        normalize(vehicle.name).includes(filter) ||
+        normalize(vehicle.category).includes(filter) ||
+        normalize(vehicle.dealership_id).includes(filter)
+      );
+    });
 
   debugBox.textContent =
-    filteredVehicles.length + ' véhicule(s) affiché(s) / ' +
-    appData.vehicles.length + ' chargé(s)';
+    filteredVehicles.length +
+    ' véhicule(s) affiché(s) / ' +
+    appData.vehicles.length +
+    ' chargé(s)';
 
   if (filteredVehicles.length === 0) {
-    vehicleSelect.innerHTML = '<option value="">Aucun véhicule trouvé</option>';
+    vehicleSelect.innerHTML =
+      '<option value="">Aucun véhicule trouvé</option>';
+
     selectedVehicle = null;
     clearVehicleDisplay();
+
     return;
   }
 
   filteredVehicles.forEach(vehicle => {
     const option = document.createElement('option');
+
     option.value = vehicle.id;
-    option.textContent = vehicle.name + ' — ' + vehicle.category;
+    option.textContent =
+      vehicle.name + ' — ' + vehicle.category;
+
     vehicleSelect.appendChild(option);
   });
 
   vehicleSelect.value = filteredVehicles[0].id;
+
   renderSelectedVehicle();
 }
 
@@ -162,7 +235,9 @@ function clearVehicleDisplay() {
   document.getElementById('category').textContent = '-';
   document.getElementById('priceHT').textContent = '-';
   document.getElementById('priceTTC').textContent = '-';
+
   document.getElementById('performances').innerHTML = '';
+
   document.getElementById('vehicleTotal').textContent = '-';
   document.getElementById('perfTotal').textContent = '-';
   document.getElementById('globalTotal').textContent = '-';
@@ -171,20 +246,36 @@ function clearVehicleDisplay() {
 function renderSelectedVehicle() {
   const vehicleId = Number(vehicleSelect.value);
 
-  selectedVehicle = appData.vehicles.find(vehicle => Number(vehicle.id) === vehicleId);
+  selectedVehicle = appData.vehicles.find(
+    vehicle => Number(vehicle.id) === vehicleId
+  );
 
   if (!selectedVehicle) {
     clearVehicleDisplay();
     return;
   }
 
-  const priceHT = roundUpMoney(selectedVehicle.price);
-  const priceTTC = getVehicleTTC(selectedVehicle);
+  const priceHT = roundUpMoney(
+    selectedVehicle.price
+  );
 
-  document.getElementById('modelName').textContent = selectedVehicle.name;
-  document.getElementById('category').textContent = selectedVehicle.category;
-  document.getElementById('priceHT').textContent = money(priceHT);
-  document.getElementById('priceTTC').textContent = priceTTC === null ? '-' : money(priceTTC);
+  const priceTTC = getVehicleTTC(
+    selectedVehicle
+  );
+
+  document.getElementById('modelName').textContent =
+    selectedVehicle.name;
+
+  document.getElementById('category').textContent =
+    selectedVehicle.category;
+
+  document.getElementById('priceHT').textContent =
+    money(priceHT);
+
+  document.getElementById('priceTTC').textContent =
+    priceTTC === null
+      ? '-'
+      : money(priceTTC);
 
   renderPerformances();
   calculateTotal();
@@ -192,10 +283,17 @@ function renderSelectedVehicle() {
 
 function getPerfLabel(perfName, index) {
   const key = normalize(perfName);
-  return perfLabels[key]?.[index] || ('niveau ' + (index + 1));
+
+  return (
+    perfLabels[key]?.[index] ||
+    ('niveau ' + (index + 1))
+  );
 }
 
-function shouldShowPerformance(vehicle, perfName) {
+function shouldShowPerformance(
+  vehicle,
+  perfName
+) {
   if (!isAirOrBoatVehicle(vehicle)) {
     return true;
   }
@@ -204,49 +302,100 @@ function shouldShowPerformance(vehicle, perfName) {
 }
 
 function renderPerformances() {
-  const container = document.getElementById('performances');
+  const container =
+    document.getElementById('performances');
+
   container.innerHTML = '';
 
-  const priceTTCForPerf = getPerfBasePrice(selectedVehicle);
-  const orderedNames = ['moteur', 'transmission', 'blindage', 'frein', 'suspension', 'turbo'];
+  const perfBasePrice =
+    getPerfBasePrice(selectedVehicle);
 
-  const entries = Object.entries(appData.performances)
-    .filter(([perfName]) => shouldShowPerformance(selectedVehicle, perfName))
-    .sort((a, b) => {
-      const ia = orderedNames.indexOf(normalize(a[0]));
-      const ib = orderedNames.indexOf(normalize(b[0]));
+  const entries = Object
+    .entries(appData.performances)
+    .filter(([perfName]) =>
+      shouldShowPerformance(
+        selectedVehicle,
+        perfName
+      )
+    )
+    .sort((first, second) => {
+      const firstIndex = perfOrder.indexOf(
+        normalize(first[0])
+      );
 
-      if (ia === -1 && ib === -1) return a[0].localeCompare(b[0], 'fr');
-      if (ia === -1) return 1;
-      if (ib === -1) return -1;
+      const secondIndex = perfOrder.indexOf(
+        normalize(second[0])
+      );
 
-      return ia - ib;
+      if (
+        firstIndex === -1 &&
+        secondIndex === -1
+      ) {
+        return first[0].localeCompare(
+          second[0],
+          'fr'
+        );
+      }
+
+      if (firstIndex === -1) {
+        return 1;
+      }
+
+      if (secondIndex === -1) {
+        return -1;
+      }
+
+      return firstIndex - secondIndex;
     });
 
   entries.forEach(([perfName, levels]) => {
     const block = document.createElement('div');
+
     block.className = 'perf-block';
 
     const title = document.createElement('h3');
+
     title.textContent = perfName;
     block.appendChild(title);
 
-    const noneLabel = document.createElement('label');
-    noneLabel.className = 'radio-line perf-row';
+    const noneLabel =
+      document.createElement('label');
+
+    noneLabel.className =
+      'radio-line perf-row';
+
     noneLabel.innerHTML = `
-      <span><input type="radio" name="${perfName}" value="0" data-total="0" checked> aucun</span>
+      <span>
+        <input
+          type="radio"
+          name="${perfName}"
+          value="0"
+          data-total="0"
+          checked
+        >
+        aucun
+      </span>
+
       <span>${money(0)}</span>
     `;
+
     block.appendChild(noneLabel);
 
     let cumulativeTotal = 0;
 
     levels.forEach((level, index) => {
-      const stepPrice = roundUpMoney(priceTTCForPerf * level.percent);
+      const stepPrice = roundUpMoney(
+        perfBasePrice * level.percent
+      );
+
       cumulativeTotal += stepPrice;
 
-      const label = document.createElement('label');
-      label.className = 'radio-line perf-row';
+      const label =
+        document.createElement('label');
+
+      label.className =
+        'radio-line perf-row';
+
       label.innerHTML = `
         <span>
           <input
@@ -255,8 +404,10 @@ function renderPerformances() {
             value="${stepPrice}"
             data-total="${cumulativeTotal}"
           >
+
           ${getPerfLabel(perfName, index)}
         </span>
+
         <span>${money(stepPrice)}</span>
       `;
 
@@ -266,27 +417,57 @@ function renderPerformances() {
     container.appendChild(block);
   });
 
-  document.querySelectorAll('input[type="radio"]').forEach(input => {
-    input.addEventListener('change', calculateTotal);
-  });
+  document
+    .querySelectorAll(
+      '#performances input[type="radio"]'
+    )
+    .forEach(input => {
+      input.addEventListener(
+        'change',
+        calculateTotal
+      );
+    });
 }
 
 function calculateTotal() {
-  if (!selectedVehicle) return;
+  if (!selectedVehicle) {
+    return;
+  }
 
-  const vehiclePurchaseTotal = getVehiclePurchaseTotal(selectedVehicle);
+  const vehiclePurchaseTotal =
+    getVehiclePurchaseTotal(selectedVehicle);
+
   let totalPerfs = 0;
 
-  document.querySelectorAll('input[type="radio"]:checked').forEach(input => {
-    totalPerfs += Number(input.dataset.total) || 0;
-  });
+  document
+    .querySelectorAll(
+      '#performances input[type="radio"]:checked'
+    )
+    .forEach(input => {
+      totalPerfs +=
+        Number(input.dataset.total) || 0;
+    });
 
-  document.getElementById('vehicleTotal').textContent = money(vehiclePurchaseTotal);
-  document.getElementById('perfTotal').textContent = money(totalPerfs);
-  document.getElementById('globalTotal').textContent = money(vehiclePurchaseTotal + totalPerfs);
+  document.getElementById('vehicleTotal').textContent =
+    money(vehiclePurchaseTotal);
+
+  document.getElementById('perfTotal').textContent =
+    money(totalPerfs);
+
+  document.getElementById('globalTotal').textContent =
+    money(
+      vehiclePurchaseTotal + totalPerfs
+    );
 }
 
-searchInput.addEventListener('input', renderVehicleList);
-vehicleSelect.addEventListener('change', renderSelectedVehicle);
+searchInput.addEventListener(
+  'input',
+  renderVehicleList
+);
+
+vehicleSelect.addEventListener(
+  'change',
+  renderSelectedVehicle
+);
 
 loadData();
