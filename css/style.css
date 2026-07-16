@@ -678,3 +678,225 @@ button {
     font-size: 16px;
   }
 }
+
+/* =========================================================
+   Inventaire — fiches repliables, statuts et sortie
+   ========================================================= */
+
+.vehicle-collapse-toggle {
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color .15s ease,
+    transform .15s ease;
+}
+
+.vehicle-collapse-toggle:hover {
+  border-color: var(--accent-red);
+}
+
+.vehicle-collapse-toggle:active {
+  transform: translateY(1px);
+}
+
+.vehicle-collapse-toggle h3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.collapse-arrow {
+  font-size: 15px;
+  line-height: 1;
+  opacity: .9;
+}
+
+.vehicle.collapsed {
+  padding-bottom: 20px;
+}
+
+.vehicle.collapsed .vehicle-title-box {
+  margin-bottom: 0;
+}
+
+.vehicle.collapsed .vehicle-collapsible-content {
+  display: none;
+}
+
+.vehicle-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 0 16px;
+  margin-bottom: 8px;
+
+  border-bottom: 1px solid var(--separator);
+}
+
+.vehicle-status-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.status-select {
+  width: auto;
+  min-width: 165px;
+  margin: 0;
+  padding: 7px 34px 7px 10px;
+  font-size: 15px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 32px;
+  padding: 6px 11px;
+
+  border: 1px solid var(--border);
+  border-radius: 999px;
+
+  font-weight: bold;
+}
+
+.archived-badge {
+  background: rgba(0, 0, 0, .18);
+  color: var(--muted);
+}
+
+.vehicle-expense-box {
+  margin-top: 14px;
+}
+
+.secondary-button {
+  background: var(--card-dark);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* Fenêtre modale */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+
+  display: none;
+  place-items: center;
+
+  padding: 20px;
+}
+
+.modal.open {
+  display: grid;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(0, 0, 0, .72);
+  backdrop-filter: blur(3px);
+}
+
+.modal-dialog {
+  position: relative;
+  z-index: 1;
+
+  width: min(520px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+
+  padding: 22px;
+
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+}
+
+.modal-dialog h2 {
+  margin: 0 0 20px;
+  color: var(--accent);
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  width: 100%;
+}
+
+/* Mobile : deux catégories de performances par ligne */
+
+@media (max-width: 700px) {
+  .garage-page .perfs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .garage-page .perf h4 {
+    padding: 9px 5px;
+    font-size: 13px;
+  }
+
+  .garage-page .perf-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px;
+
+    padding: 9px 7px;
+    font-size: 14px;
+  }
+
+  .garage-page .perf-row span:first-child {
+    gap: 5px;
+    white-space: normal;
+  }
+
+  .garage-page .perf-row span:last-child {
+    min-width: 52px;
+    font-size: 13px;
+  }
+
+  .garage-page .perf-row input {
+    width: 15px;
+    height: 15px;
+  }
+
+  .vehicle-summary-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .vehicle-status-control {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .status-select {
+    width: 100%;
+  }
+
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 390px) {
+  .garage-page .perfs {
+    grid-template-columns: 1fr;
+  }
+}
