@@ -1,276 +1,430 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
+let data = null;
+let token = localStorage.getItem('garage_token') || '';
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+const GARAGE_CACHE_KEY = 'rcp_garage_data';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time';
+const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-  <title>Inventaire - Reroll Check Perf</title>
+const perfLabelsGarage = {
+  blindage: ['20%', '40%', '60%'],
+  moteur: ['reprog', '1', '2', '3'],
+  frein: ['rue', 'sport', 'course'],
+  suspension: ['rue', 'sport', 'course'],
+  transmission: ['rue', 'sport', 'course'],
+  turbo: ['turbo']
+};
 
-  <link
-    rel="icon"
-    type="image/x-icon"
-    href="images/favicon.ico"
-  >
+const perfOrderGarage = ['moteur', 'transmission', 'blindage', 'frein', 'suspension', 'turbo'];
 
-  <link
-    rel="icon"
-    type="image/png"
-    sizes="32x32"
-    href="images/favicon-32x32.png"
-  >
+if (!token) {
+  window.location.href = 'login.html';
+}
 
-  <link
-    rel="icon"
-    type="image/png"
-    sizes="192x192"
-    href="images/favicon-192x192.png"
-  >
+function normalizeGarage(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
 
-  <link
-    rel="apple-touch-icon"
-    href="images/apple-touch-icon.png"
-  >
+function roundUpMoneyGarage(value) {
+  return Math.ceil((Number(value) || 0) - 0.000001);
+}
 
-  <link
-    rel="manifest"
-    href="manifest.webmanifest"
-  >
+function moneyGarage(value) {
+  return new Intl.NumberFormat('fr-FR', {
+    maximumFractionDigits: 0
+  }).format(roundUpMoneyGarage(value)) + ' $';
+}
 
-  <link
-    rel="stylesheet"
-    href="css/style.css"
-  >
-</head>
+function setError(message) {
+  document.getElementById('error').textContent = message || '';
+}
 
-<body class="garage-page">
-  <header>Inventaire Ailean</header>
+function escapeHtml(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
-  <main>
-    <div class="tabs">
-      <a
-        class="tab"
-        href="index.html"
-      >
-        Contrôle tarif
-      </a>
+function escapeAttr(value) {
+  return escapeHtml(value);
+}
 
-      <a
-        class="tab active"
-        href="garage.html"
-      >
-        Inventaire
-      </a>
-    </div>
+function parseStepsGarage(value) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
 
-    <div
-      id="error"
-      class="error"
-    ></div>
+function saveGarageCache() {
+  localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(data));
+  localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
+}
 
-    <div class="card">
-      <h2>Actions</h2>
+function clearGarageCache() {
+  localStorage.removeItem(GARAGE_CACHE_KEY);
+  localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
+}
 
-      <div class="grid">
-        <button
-          type="button"
-          onclick="toggleCardForm()"
-        >
-          Acheter une carte grise
-        </button>
+function isAirOrBoatGarage(vehicle) {
+  const catalogVehicle = data.catalog.find(v => v.name === String(vehicle.vehicle_name || ''));
 
-        <button
-          type="button"
-          onclick="toggleVehicleForm()"
-        >
-          Ajouter un véhicule
-        </button>
+  if (!catalogVehicle) return false;
+
+  const dealership = normalizeGarage(catalogVehicle.dealership_id);
+  return dealership === 'air' || dealership === 'boat';
+}
+
+function shouldShowPerfGarage(vehicle, perfName) {
+  if (!isAirOrBoatGarage(vehicle)) return true;
+  return normalizeGarage(perfName) === 'turbo';
+}
+
+function getPerfLabelGarage(perfName, index) {
+  const key = normalizeGarage(perfName);
+  return perfLabelsGarage[key]?.[index] || ('niveau ' + (index + 1));
+}
+
+function getCurrentPerfPrice(vehicle, perfName, index) {
+  const steps = parseStepsGarage(vehicle[perfName + '_steps']);
+  const dbPrice = Number(steps[index]) || 0;
+
+  if (dbPrice > 0) return dbPrice;
+
+  const perfLevels = data.performances[perfName] || [];
+  const level = perfLevels[index];
+
+  if (!level) return 0;
+
+  const priceBase = roundUpMoneyGarage(Number(vehicle.price_ht) * (1 + data.tvaPerf));
+  return roundUpMoneyGarage(priceBase * level.percent);
+}
+
+async function loadGarage() {
+  try {
+    setError('');
+
+    const cached = localStorage.getItem(GARAGE_CACHE_KEY);
+    const cachedTime = Number(localStorage.getItem(GARAGE_CACHE_TIME_KEY)) || 0;
+    const cacheValid = cached && Date.now() - cachedTime < GARAGE_CACHE_DURATION;
+
+    if (cacheValid) {
+      data = JSON.parse(cached);
+      renderGarage();
+
+      api('getGarageData', {}, token)
+        .then(freshData => {
+          data = freshData;
+          saveGarageCache();
+          renderGarage();
+        })
+        .catch(() => {});
+
+      return;
+    }
+
+    data = await api('getGarageData', {}, token);
+    saveGarageCache();
+    renderGarage();
+
+  } catch (error) {
+    setError(error.message);
+
+    if (error.message.includes('Session') || error.message.includes('Connexion')) {
+      localStorage.removeItem('garage_token');
+      clearGarageCache();
+      window.location.href = 'login.html';
+    }
+  }
+}
+
+function renderGarage() {
+  document.getElementById('cardsTotal').textContent = data.cardsTotal;
+  document.getElementById('cardsUsed').textContent = data.cardsUsed;
+  document.getElementById('cardsFree').textContent = data.cardsFree;
+  document.getElementById('cardsSpent').textContent = moneyGarage(data.cardsSpent || 0);
+
+  const cardSelect = document.getElementById('cardSelect');
+  cardSelect.innerHTML = data.freeCards.length === 0
+    ? '<option value="">Aucune carte grise libre</option>'
+    : data.freeCards.map(id => `<option value="${id}">Carte grise n°${id}</option>`).join('');
+
+  document.getElementById('vehicleSelect').innerHTML = data.catalog.map(v =>
+    `<option value="${escapeAttr(v.name)}">${escapeHtml(v.name)} — ${escapeHtml(v.category)}</option>`
+  ).join('');
+
+  renderVehiclesGarage();
+}
+
+function renderVehiclesGarage() {
+  const container = document.getElementById('vehicleList');
+  container.innerHTML = '';
+
+  if (!data.vehicles.length) {
+    container.innerHTML = '<p class="muted">Aucun véhicule enregistré.</p>';
+    return;
+  }
+
+  data.vehicles.forEach(vehicle => {
+    const sold = String(vehicle.status).toLowerCase() === 'vendu';
+    const totalPerfs = Math.max(
+      0,
+      Number(vehicle.depense_total || 0) - Number(vehicle.price_ttc || 0)
+    );
+
+    const div = document.createElement('div');
+    div.className = 'vehicle' + (sold ? ' sold' : '');
+
+    div.innerHTML = `
+      <div class="vehicle-title-box">
+        <h3>Carte grise n°${escapeHtml(vehicle.card_id)} — ${escapeHtml(vehicle.vehicle_name)}</h3>
+        <p class="muted">
+          <strong>Gamme :</strong> ${escapeHtml(vehicle.category)}
+          &nbsp;&nbsp;·&nbsp;&nbsp;
+          <strong>Statut :</strong> ${escapeHtml(vehicle.status)}
+        </p>
       </div>
 
-      <div
-        id="cardForm"
-        class="inline-form"
-        style="display:none;"
-      >
-        <input
-          id="cardDate"
-          placeholder="Date d’achat, ex. 03/07/2026"
-        >
-
-        <input
-          id="cardPrice"
-          type="number"
-          min="0"
-          placeholder="Prix payé"
-        >
-
-        <input
-          id="cardComment"
-          placeholder="Commentaire"
-        >
-
-        <button
-          type="button"
-          onclick="buyCard()"
-        >
-          Valider l’achat
-        </button>
+      <div class="line">
+        <strong>Nom personnalisé</strong>
+        <input ${sold ? 'disabled' : ''} value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
       </div>
 
-      <div
-        id="vehicleForm"
-        class="inline-form"
-        style="display:none;"
-      >
-        <select id="cardSelect"></select>
-
-        <select id="vehicleSelect"></select>
-
-        <input
-          id="customName"
-          placeholder="Nom personnalisé"
-        >
-
-        <input
-          id="plate"
-          placeholder="Plaque"
-        >
-
-        <input
-          id="dateAchat"
-          placeholder="Date d’achat, ex. 03/07/2026"
-        >
-
-        <button
-          type="button"
-          onclick="addVehicle()"
-        >
-          Ajouter
-        </button>
+      <div class="line">
+        <strong>Plaque</strong>
+        <input ${sold ? 'disabled' : ''} value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
       </div>
-    </div>
 
-    <div class="card">
-      <div class="grid stats-grid">
-        <div class="stat">
-          <span>Cartes possédées</span>
-          <strong id="cardsTotal">-</strong>
-        </div>
-
-        <div class="stat">
-          <span>Cartes utilisées</span>
-          <strong id="cardsUsed">-</strong>
-        </div>
-
-        <div class="stat">
-          <span>Cartes libres</span>
-          <strong id="cardsFree">-</strong>
-        </div>
-
-        <div class="stat">
-          <span>Dépensé en cartes</span>
-          <strong id="cardsSpent">-</strong>
-        </div>
+      <div class="line last-info">
+        <strong>Achat</strong>
+        <span>${escapeHtml(vehicle.date_achat || '-')}</span>
       </div>
-    </div>
+    `;
 
-    <div class="card inventory-card">
-      <h2>Inventaire</h2>
+    if (sold) {
+      div.innerHTML += `
+        <div>
+          <div class="line"><strong>Date vente</strong><span>${escapeHtml(vehicle.date_vente || '-')}</span></div>
+          <div class="line"><strong>Prix vente</strong><span>${moneyGarage(vehicle.prix_vente)}</span></div>
+          <div class="line last-info"><strong>Perte net</strong><span>${moneyGarage(vehicle.perte_net)}</span></div>
+        </div>
+      `;
+    } else {
+      div.innerHTML += renderPerfsGarage(vehicle);
+      div.innerHTML += `<div class="section-separator"></div>`;
+      div.innerHTML += `<button onclick="sellVehicle(${vehicle.card_id})">Vendre le véhicule</button>`;
+    }
 
-      <div id="vehicleList"></div>
-    </div>
-  </main>
+    div.innerHTML += `
+      <div class="expense-box" style="margin-top:14px;">
+        <div class="expense-row"><span>Achat véhicule</span><span>${moneyGarage(vehicle.price_ttc)}</span></div>
+        <div class="expense-row"><span>Total perfs</span><span>${moneyGarage(totalPerfs)}</span></div>
+        <div class="expense-row expense-main"><span>Dépense totale</span><span>${moneyGarage(vehicle.depense_total)}</span></div>
+      </div>
+    `;
 
-  <div
-    id="exitModal"
-    class="modal"
-    aria-hidden="true"
-  >
-    <div class="modal-backdrop"></div>
+    container.appendChild(div);
+  });
+}
 
-    <div
-      class="modal-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="exitModalTitle"
-    >
-      <h2 id="exitModalTitle">
-        Sortir le véhicule
-      </h2>
+function renderPerfsGarage(vehicle) {
+  let html = '<div class="perfs">';
 
-      <label for="exitType">
-        Motif de sortie
-      </label>
+  const entries = Object.entries(data.performances)
+    .filter(([perfName]) => shouldShowPerfGarage(vehicle, perfName))
+    .sort((a, b) => {
+      const ia = perfOrderGarage.indexOf(normalizeGarage(a[0]));
+      const ib = perfOrderGarage.indexOf(normalizeGarage(b[0]));
 
-      <select
-        id="exitType"
-        onchange="updateExitModalFields()"
-      >
-        <option value="vendu">
-          Véhicule vendu
-        </option>
+      if (ia === -1 && ib === -1) return a[0].localeCompare(b[0], 'fr');
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
 
-        <option value="assurance">
-          Destruction prise en charge par l’assurance
-        </option>
-      </select>
+      return ia - ib;
+    });
 
-      <label for="exitDate">
-        Date de sortie
-      </label>
+  entries.forEach(([perfName, levels]) => {
+    const current = Number(vehicle[perfName + '_level']) || 0;
 
-      <input
-        id="exitDate"
-        placeholder="Ex. 03/07/2026"
-      >
+    html += `<div class="perf"><h4>${escapeHtml(perfName)}</h4>`;
 
-      <div id="recoveredAmountGroup">
-        <label for="recoveredAmount">
-          Somme récupérée
+    levels.forEach((level, index) => {
+      const lvl = index + 1;
+      const label = getPerfLabelGarage(perfName, index);
+      const checked = current >= lvl ? 'checked' : '';
+      const canChange = lvl === current || lvl === current + 1;
+      const disabled = canChange ? '' : 'disabled';
+      const price = getCurrentPerfPrice(vehicle, perfName, index);
+
+      html += `
+        <label class="perf-row">
+          <span>
+            <input
+              type="checkbox"
+              ${checked}
+              ${disabled}
+              onchange="togglePerf(${vehicle.card_id}, '${escapeAttr(perfName)}', ${lvl}, this.checked)"
+            >
+            ${escapeHtml(label)}
+          </span>
+          <span>${moneyGarage(price)}</span>
         </label>
+      `;
+    });
 
-        <input
-          id="recoveredAmount"
-          type="number"
-          min="0"
-          placeholder="Prix de vente"
-        >
-      </div>
+    html += '</div>';
+  });
 
-      <div class="modal-actions">
-        <button
-          type="button"
-          class="secondary-button"
-          onclick="closeExitModal()"
-        >
-          Annuler
-        </button>
+  html += '</div>';
+  return html;
+}
 
-        <button
-          type="button"
-          onclick="confirmVehicleExit()"
-        >
-          Confirmer la sortie
-        </button>
-      </div>
-    </div>
-  </div>
+function toggleCardForm() {
+  const cardForm = document.getElementById('cardForm');
+  const vehicleForm = document.getElementById('vehicleForm');
 
-  <button
-    id="themeToggle"
-    class="theme-toggle"
-    title="Changer de thème"
-    type="button"
-  >
-    ☀
-  </button>
+  const willOpen = cardForm.style.display === 'none';
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/theme.js"></script>
-  <script src="js/garage.js"></script>
-</body>
-</html>
+  cardForm.style.display = willOpen ? 'grid' : 'none';
+  vehicleForm.style.display = 'none';
+}
+
+function toggleVehicleForm() {
+  const cardForm = document.getElementById('cardForm');
+  const vehicleForm = document.getElementById('vehicleForm');
+
+  const willOpen = vehicleForm.style.display === 'none';
+
+  vehicleForm.style.display = willOpen ? 'grid' : 'none';
+  cardForm.style.display = 'none';
+}
+
+async function buyCard() {
+  const payload = {
+    date_achat: document.getElementById('cardDate').value,
+    prix: document.getElementById('cardPrice').value,
+    commentaire: document.getElementById('cardComment').value
+  };
+
+  try {
+    setError('');
+    data = await api('addGarageCard', payload, token);
+    saveGarageCache();
+
+    document.getElementById('cardDate').value = '';
+    document.getElementById('cardPrice').value = '';
+    document.getElementById('cardComment').value = '';
+    document.getElementById('cardForm').style.display = 'none';
+
+    renderGarage();
+  } catch (error) {
+    setError(error.message);
+  }
+}
+
+async function addVehicle() {
+  const cardId = document.getElementById('cardSelect').value;
+
+  if (!cardId) {
+    setError('Aucune carte grise libre.');
+    return;
+  }
+
+  const payload = {
+    card_id: cardId,
+    vehicle_name: document.getElementById('vehicleSelect').value,
+    custom_name: document.getElementById('customName').value,
+    plate: document.getElementById('plate').value,
+    date_achat: document.getElementById('dateAchat').value
+  };
+
+  try {
+    setError('');
+    data = await api('addGarageVehicle', payload, token);
+    saveGarageCache();
+
+    document.getElementById('customName').value = '';
+    document.getElementById('plate').value = '';
+    document.getElementById('dateAchat').value = '';
+    document.getElementById('vehicleForm').style.display = 'none';
+
+    renderGarage();
+  } catch (error) {
+    setError(error.message);
+  }
+}
+
+async function updateField(cardId, field, value) {
+  try {
+    setError('');
+
+    data = await api('updateGarageField', {
+      cardId,
+      field,
+      value
+    }, token);
+
+    saveGarageCache();
+    renderGarage();
+  } catch (error) {
+    setError(error.message);
+  }
+}
+
+async function togglePerf(cardId, perfName, level, checked) {
+  const action = checked ? 'upgradePerformance' : 'downgradePerformance';
+
+  const payload = checked
+    ? {
+        cardId,
+        perfName,
+        newLevel: level
+      }
+    : {
+        cardId,
+        perfName,
+        targetLevel: level - 1
+      };
+
+  try {
+    setError('');
+    data = await api(action, payload, token);
+    saveGarageCache();
+    renderGarage();
+  } catch (error) {
+    setError(error.message);
+    loadGarage();
+  }
+}
+
+async function sellVehicle(cardId) {
+  const date = prompt('Date de vente ?');
+  const price = prompt('Prix de vente ?');
+
+  if (price === null) return;
+
+  try {
+    setError('');
+
+    data = await api('sellGarageVehicle', {
+      cardId,
+      dateVente: date,
+      prixVente: price
+    }, token);
+
+    saveGarageCache();
+    renderGarage();
+  } catch (error) {
+    setError(error.message);
+  }
+}
+
+loadGarage();
