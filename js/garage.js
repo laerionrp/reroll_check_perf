@@ -248,7 +248,7 @@ function renderVehiclesGarage() {
       (collapsed ? ' collapsed' : '') +
       (optionsOpen ? ' options-open' : '');
 
-    div.innerHTML = `
+    let vehicleHtml = `
       <div
         class="vehicle-title-box vehicle-collapse-header"
         role="button"
@@ -291,7 +291,7 @@ function renderVehiclesGarage() {
     `;
 
     if (sold) {
-      div.innerHTML += `
+      vehicleHtml += `
         <div>
           <div class="line"><strong>Date vente</strong><span>${escapeHtml(vehicle.date_vente || '-')}</span></div>
           <div class="line"><strong>Prix vente</strong><span>${moneyGarage(vehicle.prix_vente)}</span></div>
@@ -299,7 +299,7 @@ function renderVehiclesGarage() {
         </div>
       `;
     } else {
-      div.innerHTML += `
+      vehicleHtml += `
         <button
           type="button"
           class="secondary-button vehicle-options-toggle"
@@ -326,10 +326,10 @@ function renderVehiclesGarage() {
         </div>
       `;
 
-      div.innerHTML += renderPerfsGarage(vehicle);
+      vehicleHtml += renderPerfsGarage(vehicle);
     }
 
-    div.innerHTML += `
+    vehicleHtml += `
       <div class="expense-box" style="margin-top:14px;">
         <div class="expense-row"><span>Achat véhicule</span><span>${moneyGarage(vehicle.price_ttc)}</span></div>
         <div class="expense-row"><span>Total perfs</span><span>${moneyGarage(totalPerfs)}</span></div>
@@ -337,6 +337,8 @@ function renderVehiclesGarage() {
       </div>
       </div>
     `;
+
+    div.innerHTML = vehicleHtml;
 
     const collapseHeader = div.querySelector('.vehicle-collapse-header');
 
