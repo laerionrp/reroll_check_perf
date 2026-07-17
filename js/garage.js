@@ -377,6 +377,14 @@ function renderVehiclesGarage() {
                 ${renderGarageStatusOptions(vehicle.status)}
               </select>
             </label>
+
+            <label class="vehicle-comment-field">
+              Commentaire
+              <textarea
+                placeholder="Commentaire libre"
+                onchange="updateField(${vehicle.card_id}, 'commentaire', this.value)"
+              >${escapeHtml(vehicle.commentaire || '')}</textarea>
+            </label>
           </div>
 
           <button type="button" onclick="sellVehicle(${vehicle.card_id})">Vendre le véhicule</button>

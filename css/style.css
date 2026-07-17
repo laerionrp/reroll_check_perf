@@ -1045,6 +1045,23 @@ button {
   margin-bottom: 0;
 }
 
+.vehicle-comment-field {
+  grid-column: 1 / -1;
+}
+
+.vehicle-options-fields textarea {
+  width: 100%;
+  min-height: 96px;
+  margin: 0;
+  padding: 11px 12px;
+  resize: vertical;
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+
 .vehicle-options-panel > button {
   width: 100%;
 }
@@ -1060,6 +1077,11 @@ button {
 
   .vehicle-options-fields {
     grid-template-columns: 1fr;
+  }
+
+  .vehicle-options-fields textarea {
+    padding: 13px;
+    font-size: 16px;
   }
 }
 
