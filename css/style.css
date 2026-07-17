@@ -990,8 +990,18 @@ button {
   display: none;
 }
 
-.vehicle-purchase-line {
-  margin-bottom: 14px;
+.vehicle-sale-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.vehicle-info-separator {
+  border-top: 1px solid var(--separator);
+  margin: 16px 0;
+}
+
+.vehicle.sold .vehicle-expense-box {
+  margin-top: 0;
 }
 
 .vehicle-options-toggle {
@@ -1041,6 +1051,10 @@ button {
 @media (max-width: 700px) {
   .vehicle-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vehicle-sale-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .vehicle-options-fields {

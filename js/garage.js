@@ -284,19 +284,30 @@ function renderVehiclesGarage() {
           </div>
         </div>
 
-        <div class="line last-info vehicle-purchase-line">
-          <strong>Achat</strong>
-          <span>${escapeHtml(vehicle.date_achat || '-')}</span>
-        </div>
     `;
 
     if (sold) {
       vehicleHtml += `
-        <div>
-          <div class="line"><strong>Date vente</strong><span>${escapeHtml(vehicle.date_vente || '-')}</span></div>
-          <div class="line"><strong>Prix vente</strong><span>${moneyGarage(vehicle.prix_vente)}</span></div>
-          <div class="line last-info"><strong>Perte net</strong><span>${moneyGarage(vehicle.perte_net)}</span></div>
+        <div class="vehicle-info-separator"></div>
+
+        <div class="vehicle-summary-grid vehicle-sale-grid">
+          <div class="vehicle-summary-item">
+            <span class="vehicle-summary-label">Date de vente</span>
+            <strong class="vehicle-summary-value">${escapeHtml(vehicle.date_vente || '-')}</strong>
+          </div>
+
+          <div class="vehicle-summary-item">
+            <span class="vehicle-summary-label">Prix de vente</span>
+            <strong class="vehicle-summary-value">${moneyGarage(vehicle.prix_vente)}</strong>
+          </div>
+
+          <div class="vehicle-summary-item">
+            <span class="vehicle-summary-label">Perte nette</span>
+            <strong class="vehicle-summary-value">${moneyGarage(vehicle.perte_net)}</strong>
+          </div>
         </div>
+
+        <div class="vehicle-info-separator"></div>
       `;
     } else {
       vehicleHtml += `
@@ -330,8 +341,8 @@ function renderVehiclesGarage() {
     }
 
     vehicleHtml += `
-      <div class="expense-box" style="margin-top:14px;">
-        <div class="expense-row"><span>Achat véhicule</span><span>${moneyGarage(vehicle.price_ttc)}</span></div>
+      <div class="expense-box vehicle-expense-box">
+        <div class="expense-row"><span>Achat véhicule — ${escapeHtml(vehicle.date_achat || '-')}</span><span>${moneyGarage(vehicle.price_ttc)}</span></div>
         <div class="expense-row"><span>Total perfs</span><span>${moneyGarage(totalPerfs)}</span></div>
         <div class="expense-row expense-main"><span>Dépense totale</span><span>${moneyGarage(vehicle.depense_total)}</span></div>
       </div>
