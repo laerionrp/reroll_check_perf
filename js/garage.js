@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v11';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v11';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v11';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v11_cards';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v11_cards';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v11_cards';
 const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
@@ -353,6 +353,40 @@ function isSpecialGarageVehicle(vehicle) {
   );
 }
 
+function isSpecialGarageCatalogVehicle(vehicle) {
+  const dealership = normalizeGarage(vehicle?.dealership_id);
+  const category = normalizeGarage(vehicle?.category);
+
+  return (
+    dealership === 'air' ||
+    dealership === 'boat' ||
+    dealership === 'trailer' ||
+    category === 'cycles'
+  );
+}
+
+function updateGarageCardSelect() {
+  const vehicleSelect = document.getElementById('vehicleSelect');
+  const cardSelect = document.getElementById('cardSelect');
+
+  if (!vehicleSelect || !cardSelect || !data) return;
+
+  const selectedVehicle = data.catalog.find(
+    vehicle => vehicle.name === vehicleSelect.value
+  );
+  const special = isSpecialGarageCatalogVehicle(selectedVehicle);
+  const availableCards = special
+    ? (data.freeSpecialCards || [])
+    : (data.freeCards || []);
+  const label = special ? 'spéciale' : 'ordinaire';
+
+  cardSelect.innerHTML = availableCards.length === 0
+    ? `<option value="">Aucune carte grise ${label} libre</option>`
+    : availableCards.map(
+        id => `<option value="${id}">Carte grise ${label} n°${id}</option>`
+      ).join('');
+}
+
 function shouldShowPerfGarage(vehicle, perfName) {
   if (!isAirOrBoatGarage(vehicle)) return true;
   return normalizeGarage(perfName) === 'turbo';
@@ -453,14 +487,11 @@ function renderGarage() {
   document.getElementById('cardsFree').textContent = data.cardsFree;
   document.getElementById('cardsSpent').textContent = moneyGarage(data.cardsSpent || 0);
 
-  const cardSelect = document.getElementById('cardSelect');
-  cardSelect.innerHTML = data.freeCards.length === 0
-    ? '<option value="">Aucune carte grise libre</option>'
-    : data.freeCards.map(id => `<option value="${id}">Carte grise n°${id}</option>`).join('');
-
   document.getElementById('vehicleSelect').innerHTML = data.catalog.map(v =>
     `<option value="${escapeAttr(v.name)}">${escapeHtml(v.name)} — ${escapeHtml(v.category)}</option>`
   ).join('');
+
+  updateGarageCardSelect();
 
   renderVehiclesGarage();
 }
@@ -845,6 +876,7 @@ function toggleVehicleForm() {
 
 async function buyCard() {
   const payload = {
+    card_type: document.getElementById('cardType').value,
     date_achat: document.getElementById('cardDate').value,
     prix: document.getElementById('cardPrice').value,
     commentaire: document.getElementById('cardComment').value

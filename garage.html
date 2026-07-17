@@ -38,6 +38,10 @@
       </div>
 
       <div id="cardForm" class="inline-form" style="display:none;">
+        <select id="cardType">
+          <option value="normal">Carte grise ordinaire</option>
+          <option value="special">Carte grise spéciale</option>
+        </select>
         <input id="cardDate" placeholder="Date achat ex : 03/07/2026">
         <input id="cardPrice" placeholder="Prix payé">
         <input id="cardComment" placeholder="Commentaire">
@@ -46,7 +50,7 @@
 
       <div id="vehicleForm" class="inline-form" style="display:none;">
         <select id="cardSelect"></select>
-        <select id="vehicleSelect"></select>
+        <select id="vehicleSelect" onchange="updateGarageCardSelect()"></select>
         <input id="customName" placeholder="Nom personnalisé">
         <input id="plate" placeholder="Plaque">
         <input id="codeAhm" placeholder="Code AHM, ex : AHM.Q01">
