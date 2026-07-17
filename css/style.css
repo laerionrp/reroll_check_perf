@@ -692,94 +692,8 @@ button {
 }
 
 /* =========================================================
-   Inventaire — fiches repliables, statuts et sortie
+   Inventaire — contrôles communs
    ========================================================= */
-
-.vehicle-collapse-toggle {
-  cursor: pointer;
-  user-select: none;
-  transition:
-    border-color .15s ease,
-    transform .15s ease;
-}
-
-.vehicle-collapse-toggle:hover {
-  border-color: var(--accent-red);
-}
-
-.vehicle-collapse-toggle:active {
-  transform: translateY(1px);
-}
-
-.vehicle-collapse-toggle h3 {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-}
-
-.collapse-arrow {
-  font-size: 15px;
-  line-height: 1;
-  opacity: .9;
-}
-
-.vehicle.collapsed {
-  padding-bottom: 20px;
-}
-
-.vehicle.collapsed .vehicle-title-box {
-  margin-bottom: 0;
-}
-
-.vehicle.collapsed .vehicle-collapsible-content {
-  display: none;
-}
-
-.vehicle-summary-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 26px;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 0 0 16px;
-  margin-bottom: 8px;
-
-  border-bottom: 1px solid var(--separator);
-}
-
-.vehicle-status-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.status-select {
-  width: auto;
-  min-width: 165px;
-  margin: 0;
-  padding: 7px 34px 7px 10px;
-  font-size: 15px;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-
-  min-height: 32px;
-  padding: 6px 11px;
-
-  border: 1px solid var(--border);
-  border-radius: 999px;
-
-  font-weight: bold;
-}
-
-.archived-badge {
-  background: rgba(0, 0, 0, .18);
-  color: var(--muted);
-}
 
 .vehicle-expense-box {
   margin-top: 14px;
@@ -813,7 +727,6 @@ button {
   inset: 0;
 
   background: rgba(0, 0, 0, .72);
-  backdrop-filter: blur(3px);
 }
 
 .modal-dialog {
@@ -886,22 +799,6 @@ button {
     height: 15px;
   }
 
-  .vehicle-summary-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .vehicle-status-control {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .status-select {
-    width: 100%;
-  }
-
   .modal-actions {
     grid-template-columns: 1fr;
   }
@@ -944,13 +841,6 @@ button {
   font-size: 15px;
   line-height: 1;
   opacity: 0.9;
-}
-
-.vehicle-subtitle {
-  margin: 0 0 14px;
-  padding: 0 4px 14px;
-  border-bottom: 1px solid var(--separator);
-  font-size: 17px;
 }
 
 .vehicle.collapsed {
@@ -1124,10 +1014,6 @@ button {
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;
-}
-
-.vehicle-options-panel > button {
-  width: 100%;
 }
 
 .vehicle-exit-box {
