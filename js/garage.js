@@ -262,6 +262,25 @@ function getVehicleCollapseKey(vehicle, index) {
   ].join('|');
 }
 
+function resizeGarageComment(textarea) {
+  if (!textarea) return;
+
+  textarea.style.height = 'auto';
+
+  const borderHeight = textarea.offsetHeight - textarea.clientHeight;
+  textarea.style.height = `${textarea.scrollHeight + borderHeight}px`;
+}
+
+function scheduleGarageCommentResize(card) {
+  window.requestAnimationFrame(() => {
+    const textarea = card.querySelector('.vehicle-comment-field textarea');
+
+    if (!textarea || textarea.offsetParent === null) return;
+
+    resizeGarageComment(textarea);
+  });
+}
+
 function setVehicleCardCollapsed(card, collapseKey, collapsed) {
   card.classList.toggle('collapsed', collapsed);
   vehicleCollapseStates.set(collapseKey, collapsed);
@@ -271,6 +290,10 @@ function setVehicleCardCollapsed(card, collapseKey, collapsed) {
 
   header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   icon.textContent = collapsed ? '▼' : '▲';
+
+  if (!collapsed) {
+    scheduleGarageCommentResize(card);
+  }
 }
 
 function toggleVehicleCard(card, collapseKey) {
@@ -290,6 +313,10 @@ function setVehicleOptionsOpen(card, collapseKey, open) {
 
   button.setAttribute('aria-expanded', open ? 'true' : 'false');
   icon.textContent = open ? '▲' : '▼';
+
+  if (open) {
+    scheduleGarageCommentResize(card);
+  }
 }
 
 function toggleVehicleOptions(card, collapseKey) {
@@ -478,7 +505,11 @@ function renderVehiclesGarage() {
         aria-expanded="${collapsed ? 'false' : 'true'}"
       >
         <h3>
-          <span>Carte grise n°${escapeHtml(vehicle.card_id)} — ${escapeHtml(vehicle.vehicle_name)}</span>
+          <span class="vehicle-title-text">
+            <span class="vehicle-card-label">Carte grise n°${escapeHtml(vehicle.card_id)}</span>
+            <span class="vehicle-title-separator" aria-hidden="true"> — </span>
+            <span class="vehicle-card-name">${escapeHtml(vehicle.vehicle_name)}</span>
+          </span>
           <span class="vehicle-collapse-icon" aria-hidden="true">${collapsed ? '▼' : '▲'}</span>
         </h3>
       </div>
@@ -670,7 +701,19 @@ function renderVehiclesGarage() {
       });
     }
 
+    const commentTextarea = div.querySelector('.vehicle-comment-field textarea');
+
+    if (commentTextarea) {
+      commentTextarea.addEventListener('input', () => {
+        resizeGarageComment(commentTextarea);
+      });
+    }
+
     container.appendChild(div);
+
+    if (optionsOpen && !collapsed) {
+      scheduleGarageCommentResize(div);
+    }
   });
 }
 
