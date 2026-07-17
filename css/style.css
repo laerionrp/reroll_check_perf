@@ -900,3 +900,55 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Fiches véhicules rétractables */
+
+.vehicle-collapse-header {
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 18px;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.vehicle-collapse-header:hover {
+  border-color: var(--accent-red);
+}
+
+.vehicle-collapse-header:active {
+  transform: translateY(1px);
+}
+
+.vehicle-collapse-header h3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.vehicle-collapse-icon {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.vehicle-subtitle {
+  margin: 0 0 14px;
+  padding: 0 4px 14px;
+  border-bottom: 1px solid var(--separator);
+  font-size: 17px;
+}
+
+.vehicle.collapsed {
+  padding-bottom: 20px;
+}
+
+.vehicle.collapsed .vehicle-collapse-header {
+  margin-bottom: 0;
+}
+
+.vehicle.collapsed .vehicle-collapse-content {
+  display: none;
+}
