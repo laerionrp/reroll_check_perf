@@ -16,6 +16,8 @@ const perfLabelsGarage = {
 
 const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
 
+const vehicleCollapseStates = new Map();
+
 if (!token) {
   window.location.href = 'login.html';
 }
@@ -72,6 +74,39 @@ function saveGarageCache() {
 function clearGarageCache() {
   localStorage.removeItem(GARAGE_CACHE_KEY);
   localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
+}
+
+function getVehicleCollapseKey(vehicle, index) {
+  const archiveState = String(vehicle.status).toLowerCase() === 'vendu'
+    ? 'sold'
+    : 'active';
+
+  return [
+    index,
+    vehicle.card_id,
+    vehicle.vehicle_name,
+    vehicle.created_at || vehicle.date_achat || '',
+    archiveState
+  ].join('|');
+}
+
+function setVehicleCardCollapsed(card, collapseKey, collapsed) {
+  card.classList.toggle('collapsed', collapsed);
+  vehicleCollapseStates.set(collapseKey, collapsed);
+
+  const header = card.querySelector('.vehicle-collapse-header');
+  const icon = card.querySelector('.vehicle-collapse-icon');
+
+  header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  icon.textContent = collapsed ? '▼' : '▲';
+}
+
+function toggleVehicleCard(card, collapseKey) {
+  setVehicleCardCollapsed(
+    card,
+    collapseKey,
+    !card.classList.contains('collapsed')
+  );
 }
 
 function isAirOrBoatGarage(vehicle) {
@@ -173,19 +208,35 @@ function renderVehiclesGarage() {
     return;
   }
 
-  data.vehicles.forEach(vehicle => {
+  data.vehicles.forEach((vehicle, vehicleIndex) => {
     const sold = String(vehicle.status).toLowerCase() === 'vendu';
+    const collapseKey = getVehicleCollapseKey(vehicle, vehicleIndex);
+    const collapsed = vehicleCollapseStates.has(collapseKey)
+      ? vehicleCollapseStates.get(collapseKey)
+      : sold;
+
     const totalPerfs = Math.max(
       0,
       Number(vehicle.depense_total || 0) - Number(vehicle.price_ttc || 0)
     );
 
     const div = document.createElement('div');
-    div.className = 'vehicle' + (sold ? ' sold' : '');
+    div.className =
+      'vehicle' +
+      (sold ? ' sold' : '') +
+      (collapsed ? ' collapsed' : '');
 
     div.innerHTML = `
-      <div class="vehicle-title-box">
-        <h3>Carte grise n°${escapeHtml(vehicle.card_id)} — ${escapeHtml(vehicle.vehicle_name)}</h3>
+      <div
+        class="vehicle-title-box vehicle-collapse-header"
+        role="button"
+        tabindex="0"
+        aria-expanded="${collapsed ? 'false' : 'true'}"
+      >
+        <h3>
+          <span>Carte grise n°${escapeHtml(vehicle.card_id)} — ${escapeHtml(vehicle.vehicle_name)}</span>
+          <span class="vehicle-collapse-icon" aria-hidden="true">${collapsed ? '▼' : '▲'}</span>
+        </h3>
         <p class="muted">
           <strong>Gamme :</strong> ${escapeHtml(vehicle.category)}
           &nbsp;&nbsp;·&nbsp;&nbsp;
@@ -193,6 +244,7 @@ function renderVehiclesGarage() {
         </p>
       </div>
 
+      <div class="vehicle-collapse-content">
       <div class="line">
         <strong>Nom personnalisé</strong>
         <input ${sold ? 'disabled' : ''} value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
@@ -229,7 +281,21 @@ function renderVehiclesGarage() {
         <div class="expense-row"><span>Total perfs</span><span>${moneyGarage(totalPerfs)}</span></div>
         <div class="expense-row expense-main"><span>Dépense totale</span><span>${moneyGarage(vehicle.depense_total)}</span></div>
       </div>
+      </div>
     `;
+
+    const collapseHeader = div.querySelector('.vehicle-collapse-header');
+
+    collapseHeader.addEventListener('click', () => {
+      toggleVehicleCard(div, collapseKey);
+    });
+
+    collapseHeader.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+
+      event.preventDefault();
+      toggleVehicleCard(div, collapseKey);
+    });
 
     container.appendChild(div);
   });
