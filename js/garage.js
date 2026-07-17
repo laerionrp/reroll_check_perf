@@ -19,6 +19,16 @@ const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmiss
 const vehicleCollapseStates = new Map();
 const vehicleOptionsStates = new Map();
 
+const GARAGE_STATUS_OPTIONS = [
+  'Appartement',
+  "Benny's",
+  'LSDWP',
+  'Parking public',
+  'Parking privé',
+  'Fourrière',
+  'Disparu'
+];
+
 if (!token) {
   window.location.href = 'login.html';
 }
@@ -56,6 +66,35 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+function renderGarageStatusOptions(currentStatus) {
+  const current = String(currentStatus || '');
+  const statuses = Array.isArray(data.statusOptions) && data.statusOptions.length
+    ? data.statusOptions
+    : GARAGE_STATUS_OPTIONS;
+
+  let html = '';
+
+  if (current && !statuses.includes(current)) {
+    html += `
+      <option value="${escapeAttr(current)}" selected disabled>
+        ${escapeHtml(current)} — ancien statut
+      </option>
+    `;
+  }
+
+  statuses.forEach(status => {
+    const selected = status === current ? 'selected' : '';
+
+    html += `
+      <option value="${escapeAttr(status)}" ${selected}>
+        ${escapeHtml(status)}
+      </option>
+    `;
+  });
+
+  return html;
 }
 
 function parseStepsGarage(value) {
@@ -331,6 +370,13 @@ function renderVehiclesGarage() {
               Plaque
               <input value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
             </label>
+
+            <label>
+              Statut
+              <select onchange="updateGarageStatus(${vehicle.card_id}, this.value)">
+                ${renderGarageStatusOptions(vehicle.status)}
+              </select>
+            </label>
           </div>
 
           <button type="button" onclick="sellVehicle(${vehicle.card_id})">Vendre le véhicule</button>
@@ -517,6 +563,23 @@ async function updateField(cardId, field, value) {
     renderGarage();
   } catch (error) {
     setError(error.message);
+  }
+}
+
+async function updateGarageStatus(cardId, status) {
+  try {
+    setError('');
+
+    data = await api('updateGarageStatus', {
+      cardId,
+      status
+    }, token);
+
+    saveGarageCache();
+    renderGarage();
+  } catch (error) {
+    setError(error.message);
+    renderGarage();
   }
 }
 
