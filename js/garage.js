@@ -7,14 +7,14 @@ const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
   blindage: ['20%', '40%', '60%'],
-  moteur: ['reprog', '1', '2', '3'],
+  moteur: ['reprog', 'reprog niv. 1', 'reprog niv. 2', 'reprog niv. 3'],
   frein: ['rue', 'sport', 'course'],
   suspension: ['rue', 'sport', 'course'],
   transmission: ['rue', 'sport', 'course'],
   turbo: ['turbo']
 };
 
-const perfOrderGarage = ['moteur', 'transmission', 'blindage', 'frein', 'suspension', 'turbo'];
+const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
 
 if (!token) {
   window.location.href = 'login.html';
