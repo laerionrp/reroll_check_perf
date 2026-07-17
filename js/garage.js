@@ -3,6 +3,7 @@ let token = localStorage.getItem('garage_token') || '';
 
 const GARAGE_CACHE_KEY = 'rcp_garage_data';
 const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token';
 const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
@@ -111,11 +112,48 @@ function parseStepsGarage(value) {
 function saveGarageCache() {
   localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(data));
   localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
+  localStorage.setItem(GARAGE_CACHE_TOKEN_KEY, token);
 }
 
 function clearGarageCache() {
   localStorage.removeItem(GARAGE_CACHE_KEY);
   localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
+  localStorage.removeItem(GARAGE_CACHE_TOKEN_KEY);
+}
+
+function isGarageSessionError(error) {
+  const message = String(error?.message || error || '');
+
+  return (
+    message.includes('Session expirée') ||
+    message.includes('Connexion requise')
+  );
+}
+
+function redirectToGarageLogin(message) {
+  localStorage.removeItem('garage_token');
+  clearGarageCache();
+
+  if (message) {
+    sessionStorage.setItem('garage_login_message', message);
+  }
+
+  window.location.replace('login.html');
+}
+
+async function logoutGarageUser() {
+  const logoutButton = document.getElementById('logoutButton');
+
+  logoutButton.disabled = true;
+  logoutButton.textContent = 'Déconnexion...';
+
+  try {
+    await api('logoutGarage', {}, token);
+  } catch (error) {
+    /* La déconnexion locale reste prioritaire si le réseau est indisponible. */
+  }
+
+  redirectToGarageLogin('Déconnexion effectuée.');
 }
 
 function isGarageVehicleArchived(vehicle) {
@@ -300,13 +338,36 @@ async function loadGarage() {
   try {
     setError('');
 
+    let cacheLoaded = false;
+
     const cached = localStorage.getItem(GARAGE_CACHE_KEY);
     const cachedTime = Number(localStorage.getItem(GARAGE_CACHE_TIME_KEY)) || 0;
-    const cacheValid = cached && Date.now() - cachedTime < GARAGE_CACHE_DURATION;
+    const cachedToken = localStorage.getItem(GARAGE_CACHE_TOKEN_KEY);
+    const cacheValid =
+      cached &&
+      cachedToken === token &&
+      Date.now() - cachedTime < GARAGE_CACHE_DURATION;
 
     if (cacheValid) {
-      data = JSON.parse(cached);
-      renderGarage();
+      try {
+        const parsedCache = JSON.parse(cached);
+
+        if (!parsedCache || !Array.isArray(parsedCache.vehicles)) {
+          throw new Error('Cache incomplet');
+        }
+
+        data = parsedCache;
+        renderGarage();
+        cacheLoaded = true;
+      } catch (error) {
+        clearGarageCache();
+        data = null;
+      }
+    } else if (cached) {
+      clearGarageCache();
+    }
+
+    if (cacheLoaded) {
 
       api('getGarageData', {}, token)
         .then(freshData => {
@@ -314,7 +375,16 @@ async function loadGarage() {
           saveGarageCache();
           renderGarage();
         })
-        .catch(() => {});
+        .catch(error => {
+          if (isGarageSessionError(error)) {
+            redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
+            return;
+          }
+
+          setError(
+            'Mise à jour impossible : affichage des dernières données enregistrées.'
+          );
+        });
 
       return;
     }
@@ -324,13 +394,12 @@ async function loadGarage() {
     renderGarage();
 
   } catch (error) {
-    setError(error.message);
-
-    if (error.message.includes('Session') || error.message.includes('Connexion')) {
-      localStorage.removeItem('garage_token');
-      clearGarageCache();
-      window.location.href = 'login.html';
+    if (isGarageSessionError(error)) {
+      redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
+      return;
     }
+
+    setError(error.message);
   }
 }
 
