@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v11';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v11';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v11';
 const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
@@ -336,6 +336,23 @@ function isAirOrBoatGarage(vehicle) {
   return dealership === 'air' || dealership === 'boat';
 }
 
+function isSpecialGarageVehicle(vehicle) {
+  const catalogVehicle = data.catalog.find(
+    v => v.name === String(vehicle.vehicle_name || '')
+  );
+  const dealership = normalizeGarage(catalogVehicle?.dealership_id);
+  const category = normalizeGarage(
+    catalogVehicle?.category || vehicle.category
+  );
+
+  return (
+    dealership === 'air' ||
+    dealership === 'boat' ||
+    dealership === 'trailer' ||
+    category === 'cycles'
+  );
+}
+
 function shouldShowPerfGarage(vehicle, perfName) {
   if (!isAirOrBoatGarage(vehicle)) return true;
   return normalizeGarage(perfName) === 'turbo';
@@ -475,7 +492,31 @@ function renderVehiclesGarage() {
     return;
   }
 
-  visibleVehicles.forEach(vehicle => {
+  const mainVehicles = visibleVehicles.filter(
+    vehicle => !isSpecialGarageVehicle(vehicle)
+  );
+  const specialVehicles = visibleVehicles.filter(isSpecialGarageVehicle);
+
+  const sections = [];
+
+  if (mainVehicles.length) {
+    sections.push({ title: 'Parc principal', vehicles: mainVehicles });
+  }
+
+  if (specialVehicles.length) {
+    sections.push({ title: 'Véhicules spéciaux', vehicles: specialVehicles });
+  }
+
+  sections.forEach(section => {
+    const sectionElement = document.createElement('section');
+    sectionElement.className = 'garage-vehicle-section';
+    sectionElement.innerHTML = `<h3 class="garage-vehicle-section-title">${section.title}</h3>`;
+
+    const sectionList = document.createElement('div');
+    sectionList.className = 'garage-vehicle-section-list';
+    sectionElement.appendChild(sectionList);
+
+    section.vehicles.forEach(vehicle => {
     const vehicleIndex = data.vehicles.indexOf(vehicle);
     const archived = isGarageVehicleArchived(vehicle);
     const exitType = getGarageExitType(vehicle);
@@ -507,6 +548,7 @@ function renderVehiclesGarage() {
         <h3>
           <span class="vehicle-title-text">
             <span class="vehicle-card-label">Carte grise n°${escapeHtml(vehicle.card_id)}</span>
+            ${vehicle.code_ahm ? `<span class="vehicle-title-separator" aria-hidden="true"> — </span><span class="vehicle-ahm-code">${escapeHtml(vehicle.code_ahm)}</span>` : ''}
             <span class="vehicle-title-separator" aria-hidden="true"> — </span>
             <span class="vehicle-card-name">${escapeHtml(vehicle.vehicle_name)}</span>
           </span>
@@ -618,6 +660,15 @@ function renderVehiclesGarage() {
             </label>
 
             <label>
+              Code AHM
+              <input
+                value="${escapeAttr(vehicle.code_ahm || '')}"
+                placeholder="Ex : AHM.Q01"
+                onchange="updateField(${vehicle.card_id}, 'code_ahm', this.value)"
+              >
+            </label>
+
+            <label>
               Statut
               <select onchange="updateGarageStatus(${vehicle.card_id}, this.value)">
                 ${renderGarageStatusOptions(vehicle.status)}
@@ -709,11 +760,14 @@ function renderVehiclesGarage() {
       });
     }
 
-    container.appendChild(div);
+    sectionList.appendChild(div);
 
     if (optionsOpen && !collapsed) {
       scheduleGarageCommentResize(div);
     }
+    });
+
+    container.appendChild(sectionElement);
   });
 }
 
@@ -825,6 +879,7 @@ async function addVehicle() {
     vehicle_name: document.getElementById('vehicleSelect').value,
     custom_name: document.getElementById('customName').value,
     plate: document.getElementById('plate').value,
+    code_ahm: document.getElementById('codeAhm').value,
     date_achat: document.getElementById('dateAchat').value
   };
 
@@ -835,6 +890,7 @@ async function addVehicle() {
 
     document.getElementById('customName').value = '';
     document.getElementById('plate').value = '';
+    document.getElementById('codeAhm').value = '';
     document.getElementById('dateAchat').value = '';
     document.getElementById('vehicleForm').style.display = 'none';
 

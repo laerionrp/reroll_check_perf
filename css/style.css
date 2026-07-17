@@ -350,6 +350,23 @@ button {
   gap: 24px;
 }
 
+.garage-vehicle-section + .garage-vehicle-section {
+  margin-top: 28px;
+}
+
+.garage-vehicle-section-title {
+  margin: 0 0 14px;
+}
+
+.garage-vehicle-section-list {
+  display: grid;
+  gap: 20px;
+}
+
+.vehicle-ahm-code {
+  color: #ffd0bd;
+}
+
 .vehicle h3 {
   margin: 0;
 }
@@ -456,6 +473,18 @@ button {
   place-items: center;
 }
 
+.app-version {
+  position: fixed;
+  left: 12px;
+  bottom: 10px;
+  z-index: 998;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: bold;
+  opacity: .85;
+  pointer-events: none;
+}
+
 .login-box {
   width: min(420px, 92vw);
   background: var(--card);
@@ -472,6 +501,11 @@ button {
 /* Grand écran : inventaire en 2 colonnes max */
 @media (min-width: 1351px) {
   .garage-page #vehicleList {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .garage-vehicle-section-list {
     grid-template-columns: repeat(2, minmax(620px, 1fr));
     align-items: start;
   }
