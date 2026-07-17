@@ -952,3 +952,104 @@ button {
 .vehicle.collapsed .vehicle-collapse-content {
   display: none;
 }
+
+/* Résumé et panneau d'options d'une fiche véhicule */
+
+.vehicle-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.vehicle-summary-item {
+  min-width: 0;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, .08);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.vehicle-summary-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.vehicle-summary-value {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.vehicle.options-open .vehicle-summary-optional {
+  display: none;
+}
+
+.vehicle-purchase-line {
+  margin-bottom: 14px;
+}
+
+.vehicle-options-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.vehicle-options-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.vehicle-options-panel {
+  display: none;
+  margin-bottom: 18px;
+  padding: 16px;
+  background: rgba(0, 0, 0, .08);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.vehicle.options-open .vehicle-options-panel {
+  display: block;
+}
+
+.vehicle-options-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.vehicle-options-fields label,
+.vehicle-options-fields input {
+  margin-bottom: 0;
+}
+
+.vehicle-options-panel > button {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .vehicle-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vehicle-options-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 390px) {
+  .vehicle-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

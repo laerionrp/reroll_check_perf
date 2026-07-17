@@ -17,6 +17,7 @@ const perfLabelsGarage = {
 const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
 
 const vehicleCollapseStates = new Map();
+const vehicleOptionsStates = new Map();
 
 if (!token) {
   window.location.href = 'login.html';
@@ -106,6 +107,25 @@ function toggleVehicleCard(card, collapseKey) {
     card,
     collapseKey,
     !card.classList.contains('collapsed')
+  );
+}
+
+function setVehicleOptionsOpen(card, collapseKey, open) {
+  card.classList.toggle('options-open', open);
+  vehicleOptionsStates.set(collapseKey, open);
+
+  const button = card.querySelector('.vehicle-options-toggle');
+  const icon = card.querySelector('.vehicle-options-icon');
+
+  button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  icon.textContent = open ? '▲' : '▼';
+}
+
+function toggleVehicleOptions(card, collapseKey) {
+  setVehicleOptionsOpen(
+    card,
+    collapseKey,
+    !card.classList.contains('options-open')
   );
 }
 
@@ -214,6 +234,7 @@ function renderVehiclesGarage() {
     const collapsed = vehicleCollapseStates.has(collapseKey)
       ? vehicleCollapseStates.get(collapseKey)
       : sold;
+    const optionsOpen = !sold && vehicleOptionsStates.get(collapseKey) === true;
 
     const totalPerfs = Math.max(
       0,
@@ -224,7 +245,8 @@ function renderVehiclesGarage() {
     div.className =
       'vehicle' +
       (sold ? ' sold' : '') +
-      (collapsed ? ' collapsed' : '');
+      (collapsed ? ' collapsed' : '') +
+      (optionsOpen ? ' options-open' : '');
 
     div.innerHTML = `
       <div
@@ -237,28 +259,35 @@ function renderVehiclesGarage() {
           <span>Carte grise n°${escapeHtml(vehicle.card_id)} — ${escapeHtml(vehicle.vehicle_name)}</span>
           <span class="vehicle-collapse-icon" aria-hidden="true">${collapsed ? '▼' : '▲'}</span>
         </h3>
-        <p class="muted">
-          <strong>Gamme :</strong> ${escapeHtml(vehicle.category)}
-          &nbsp;&nbsp;·&nbsp;&nbsp;
-          <strong>Statut :</strong> ${escapeHtml(vehicle.status)}
-        </p>
       </div>
 
       <div class="vehicle-collapse-content">
-      <div class="line">
-        <strong>Nom personnalisé</strong>
-        <input ${sold ? 'disabled' : ''} value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
-      </div>
+        <div class="vehicle-summary-grid">
+          <div class="vehicle-summary-item">
+            <span class="vehicle-summary-label">Gamme</span>
+            <strong class="vehicle-summary-value">${escapeHtml(vehicle.category || '-')}</strong>
+          </div>
 
-      <div class="line">
-        <strong>Plaque</strong>
-        <input ${sold ? 'disabled' : ''} value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
-      </div>
+          <div class="vehicle-summary-item">
+            <span class="vehicle-summary-label">Statut</span>
+            <strong class="vehicle-summary-value">${escapeHtml(vehicle.status || '-')}</strong>
+          </div>
 
-      <div class="line last-info">
-        <strong>Achat</strong>
-        <span>${escapeHtml(vehicle.date_achat || '-')}</span>
-      </div>
+          <div class="vehicle-summary-item vehicle-summary-optional">
+            <span class="vehicle-summary-label">Nom personnalisé</span>
+            <strong class="vehicle-summary-value">${escapeHtml(vehicle.custom_name || '-')}</strong>
+          </div>
+
+          <div class="vehicle-summary-item vehicle-summary-optional">
+            <span class="vehicle-summary-label">Plaque</span>
+            <strong class="vehicle-summary-value">${escapeHtml(vehicle.plate || '-')}</strong>
+          </div>
+        </div>
+
+        <div class="line last-info vehicle-purchase-line">
+          <strong>Achat</strong>
+          <span>${escapeHtml(vehicle.date_achat || '-')}</span>
+        </div>
     `;
 
     if (sold) {
@@ -270,9 +299,34 @@ function renderVehiclesGarage() {
         </div>
       `;
     } else {
+      div.innerHTML += `
+        <button
+          type="button"
+          class="secondary-button vehicle-options-toggle"
+          aria-expanded="${optionsOpen ? 'true' : 'false'}"
+        >
+          <span>Options du véhicule</span>
+          <span class="vehicle-options-icon" aria-hidden="true">${optionsOpen ? '▲' : '▼'}</span>
+        </button>
+
+        <div class="vehicle-options-panel">
+          <div class="vehicle-options-fields">
+            <label>
+              Nom personnalisé
+              <input value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
+            </label>
+
+            <label>
+              Plaque
+              <input value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
+            </label>
+          </div>
+
+          <button type="button" onclick="sellVehicle(${vehicle.card_id})">Vendre le véhicule</button>
+        </div>
+      `;
+
       div.innerHTML += renderPerfsGarage(vehicle);
-      div.innerHTML += `<div class="section-separator"></div>`;
-      div.innerHTML += `<button onclick="sellVehicle(${vehicle.card_id})">Vendre le véhicule</button>`;
     }
 
     div.innerHTML += `
@@ -296,6 +350,14 @@ function renderVehiclesGarage() {
       event.preventDefault();
       toggleVehicleCard(div, collapseKey);
     });
+
+    const optionsButton = div.querySelector('.vehicle-options-toggle');
+
+    if (optionsButton) {
+      optionsButton.addEventListener('click', () => {
+        toggleVehicleOptions(div, collapseKey);
+      });
+    }
 
     container.appendChild(div);
   });
