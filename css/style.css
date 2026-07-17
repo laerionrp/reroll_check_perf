@@ -1000,8 +1000,22 @@ button {
   margin: 16px 0;
 }
 
-.vehicle.sold .vehicle-expense-box {
+.vehicle.archived .vehicle-expense-box {
   margin-top: 0;
+}
+
+.vehicle-archive-comment {
+  padding: 14px;
+  background: rgba(0, 0, 0, .08);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.vehicle-archive-comment p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
 }
 
 .vehicle-options-toggle {
@@ -1066,6 +1080,48 @@ button {
   width: 100%;
 }
 
+.vehicle-exit-box {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .1);
+}
+
+.vehicle-exit-box h4 {
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 17px;
+}
+
+.vehicle-exit-warning {
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.vehicle-exit-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.vehicle-exit-fields label,
+.vehicle-exit-fields input,
+.vehicle-exit-fields select {
+  margin-bottom: 0;
+}
+
+.vehicle-exit-fields [hidden] {
+  display: none;
+}
+
+.vehicle-exit-button {
+  width: 100%;
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
 @media (max-width: 700px) {
   .vehicle-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1076,6 +1132,10 @@ button {
   }
 
   .vehicle-options-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-exit-fields {
     grid-template-columns: 1fr;
   }
 

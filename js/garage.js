@@ -18,6 +18,7 @@ const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmiss
 
 const vehicleCollapseStates = new Map();
 const vehicleOptionsStates = new Map();
+const pendingGarageFieldUpdates = new Map();
 
 const GARAGE_STATUS_OPTIONS = [
   'Appartement',
@@ -116,9 +117,55 @@ function clearGarageCache() {
   localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
 }
 
+function isGarageVehicleArchived(vehicle) {
+  const status = normalizeGarage(vehicle.status);
+
+  return (
+    status === 'vendu' ||
+    status === 'sorti' ||
+    Boolean(vehicle.exit_type)
+  );
+}
+
+function getGarageExitType(vehicle) {
+  const exitType = normalizeGarage(vehicle.exit_type);
+
+  if (exitType === 'assurance') return 'assurance';
+  if (exitType === 'vendu') return 'vendu';
+
+  return normalizeGarage(vehicle.status) === 'vendu'
+    ? 'vendu'
+    : '';
+}
+
+function getTodayGarageInputDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatGarageInputDate(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  return match
+    ? `${match[3]}/${match[2]}/${match[1]}`
+    : String(value || '');
+}
+
+function parseGarageMoneyInput(value) {
+  const normalized = String(value || '')
+    .replace(/\s/g, '')
+    .replace(',', '.');
+
+  return Number(normalized);
+}
+
 function getVehicleCollapseKey(vehicle, index) {
-  const archiveState = String(vehicle.status).toLowerCase() === 'vendu'
-    ? 'sold'
+  const archiveState = isGarageVehicleArchived(vehicle)
+    ? 'archived'
     : 'active';
 
   return [
@@ -268,12 +315,13 @@ function renderVehiclesGarage() {
   }
 
   data.vehicles.forEach((vehicle, vehicleIndex) => {
-    const sold = String(vehicle.status).toLowerCase() === 'vendu';
+    const archived = isGarageVehicleArchived(vehicle);
+    const exitType = getGarageExitType(vehicle);
     const collapseKey = getVehicleCollapseKey(vehicle, vehicleIndex);
     const collapsed = vehicleCollapseStates.has(collapseKey)
       ? vehicleCollapseStates.get(collapseKey)
-      : sold;
-    const optionsOpen = !sold && vehicleOptionsStates.get(collapseKey) === true;
+      : archived;
+    const optionsOpen = !archived && vehicleOptionsStates.get(collapseKey) === true;
 
     const totalPerfs = Math.max(
       0,
@@ -283,7 +331,7 @@ function renderVehiclesGarage() {
     const div = document.createElement('div');
     div.className =
       'vehicle' +
-      (sold ? ' sold' : '') +
+      (archived ? ' sold archived' : '') +
       (collapsed ? ' collapsed' : '') +
       (optionsOpen ? ' options-open' : '');
 
@@ -325,8 +373,30 @@ function renderVehiclesGarage() {
 
     `;
 
-    if (sold) {
-      vehicleHtml += `
+    if (archived) {
+      if (exitType === 'assurance') {
+        vehicleHtml += `
+          <div class="vehicle-info-separator"></div>
+
+          <div class="vehicle-summary-grid vehicle-sale-grid">
+            <div class="vehicle-summary-item">
+              <span class="vehicle-summary-label">Motif de sortie</span>
+              <strong class="vehicle-summary-value">Assurance</strong>
+            </div>
+
+            <div class="vehicle-summary-item">
+              <span class="vehicle-summary-label">Date de sortie</span>
+              <strong class="vehicle-summary-value">${escapeHtml(vehicle.date_vente || '-')}</strong>
+            </div>
+
+            <div class="vehicle-summary-item">
+              <span class="vehicle-summary-label">Perte nette</span>
+              <strong class="vehicle-summary-value">${moneyGarage(vehicle.perte_net)}</strong>
+            </div>
+          </div>
+        `;
+      } else {
+        vehicleHtml += `
         <div class="vehicle-info-separator"></div>
 
         <div class="vehicle-summary-grid vehicle-sale-grid">
@@ -344,6 +414,16 @@ function renderVehiclesGarage() {
             <span class="vehicle-summary-label">Perte nette</span>
             <strong class="vehicle-summary-value">${moneyGarage(vehicle.perte_net)}</strong>
           </div>
+        </div>
+        `;
+      }
+
+      vehicleHtml += `
+        <div class="vehicle-info-separator"></div>
+
+        <div class="vehicle-archive-comment">
+          <span class="vehicle-summary-label">Commentaire</span>
+          <p>${escapeHtml(vehicle.commentaire || 'Aucun commentaire')}</p>
         </div>
 
         <div class="vehicle-info-separator"></div>
@@ -387,7 +467,36 @@ function renderVehiclesGarage() {
             </label>
           </div>
 
-          <button type="button" onclick="sellVehicle(${vehicle.card_id})">Vendre le véhicule</button>
+          <div class="vehicle-exit-box">
+            <h4>Sortie du véhicule</h4>
+            <p class="vehicle-exit-warning">
+              Cette opération archive définitivement le véhicule et libère sa carte grise.
+            </p>
+
+            <div class="vehicle-exit-fields">
+              <label>
+                Motif
+                <select id="exitType-${vehicle.card_id}" onchange="updateGarageExitForm(${vehicle.card_id})">
+                  <option value="vendu">Vendu</option>
+                  <option value="assurance">Assurance</option>
+                </select>
+              </label>
+
+              <label>
+                Date de sortie
+                <input id="exitDate-${vehicle.card_id}" type="date" value="${getTodayGarageInputDate()}">
+              </label>
+
+              <label id="exitAmountField-${vehicle.card_id}">
+                Prix de vente
+                <input id="exitAmount-${vehicle.card_id}" inputmode="decimal" placeholder="Ex : 21 500">
+              </label>
+            </div>
+
+            <button type="button" class="vehicle-exit-button" onclick="exitVehicle(${vehicle.card_id})">
+              Valider la sortie définitive
+            </button>
+          </div>
         </div>
       `;
 
@@ -558,20 +667,35 @@ async function addVehicle() {
 }
 
 async function updateField(cardId, field, value) {
-  try {
-    setError('');
+  const updateKey = `${cardId}|${field}`;
+  const request = (async () => {
+    try {
+      setError('');
 
-    data = await api('updateGarageField', {
-      cardId,
-      field,
-      value
-    }, token);
+      data = await api('updateGarageField', {
+        cardId,
+        field,
+        value
+      }, token);
 
-    saveGarageCache();
-    renderGarage();
-  } catch (error) {
-    setError(error.message);
+      saveGarageCache();
+      renderGarage();
+      return true;
+    } catch (error) {
+      setError(error.message);
+      return false;
+    }
+  })();
+
+  pendingGarageFieldUpdates.set(updateKey, request);
+
+  const result = await request;
+
+  if (pendingGarageFieldUpdates.get(updateKey) === request) {
+    pendingGarageFieldUpdates.delete(updateKey);
   }
+
+  return result;
 }
 
 async function updateGarageStatus(cardId, status) {
@@ -617,19 +741,77 @@ async function togglePerf(cardId, perfName, level, checked) {
   }
 }
 
-async function sellVehicle(cardId) {
-  const date = prompt('Date de vente ?');
-  const price = prompt('Prix de vente ?');
+function updateGarageExitForm(cardId) {
+  const exitType = document.getElementById(`exitType-${cardId}`).value;
+  const amountField = document.getElementById(`exitAmountField-${cardId}`);
+  const amountInput = document.getElementById(`exitAmount-${cardId}`);
 
-  if (price === null) return;
+  const isSale = exitType === 'vendu';
+
+  amountField.hidden = !isSale;
+  amountInput.disabled = !isSale;
+
+  if (!isSale) {
+    amountInput.value = '';
+  }
+}
+
+async function exitVehicle(cardId) {
+  const exitType = document.getElementById(`exitType-${cardId}`).value;
+  const exitDateInput = document.getElementById(`exitDate-${cardId}`);
+  const amountInput = document.getElementById(`exitAmount-${cardId}`);
+  const exitDate = formatGarageInputDate(exitDateInput.value);
+
+  if (!exitDate) {
+    setError('Indique une date de sortie.');
+    exitDateInput.focus();
+    return;
+  }
+
+  let recoveredAmount = 0;
+
+  if (exitType === 'vendu') {
+    if (!amountInput.value.trim()) {
+      setError('Indique le prix de vente.');
+      amountInput.focus();
+      return;
+    }
+
+    recoveredAmount = parseGarageMoneyInput(amountInput.value);
+
+    if (!Number.isFinite(recoveredAmount) || recoveredAmount < 0) {
+      setError('Le prix de vente est invalide.');
+      amountInput.focus();
+      return;
+    }
+  }
+
+  const actionLabel = exitType === 'vendu'
+    ? 'vendre et archiver ce véhicule'
+    : "archiver ce véhicule au titre de l'assurance";
+
+  if (!confirm(`Confirmer : ${actionLabel} ? Cette action est définitive.`)) {
+    return;
+  }
+
+  const pendingCommentUpdate = pendingGarageFieldUpdates.get(
+    `${cardId}|commentaire`
+  );
+
+  if (pendingCommentUpdate) {
+    const commentSaved = await pendingCommentUpdate;
+
+    if (!commentSaved) return;
+  }
 
   try {
     setError('');
 
-    data = await api('sellGarageVehicle', {
+    data = await api('exitGarageVehicle', {
       cardId,
-      dateVente: date,
-      prixVente: price
+      exitType,
+      exitDate,
+      recoveredAmount
     }, token);
 
     saveGarageCache();
