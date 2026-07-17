@@ -64,6 +64,22 @@
 
     <div class="card">
       <h2>Inventaire</h2>
+
+      <div class="vehicle-filters" role="group" aria-label="Filtrer les véhicules">
+        <button type="button" class="vehicle-filter active" data-filter="active" aria-pressed="true" onclick="setGarageVehicleFilter('active')">
+          En possession <span id="activeVehiclesCount">0</span>
+        </button>
+        <button type="button" class="vehicle-filter" data-filter="vendu" aria-pressed="false" onclick="setGarageVehicleFilter('vendu')">
+          Vendus <span id="soldVehiclesCount">0</span>
+        </button>
+        <button type="button" class="vehicle-filter" data-filter="assurance" aria-pressed="false" onclick="setGarageVehicleFilter('assurance')">
+          Assurance <span id="insuredVehiclesCount">0</span>
+        </button>
+        <button type="button" class="vehicle-filter" data-filter="all" aria-pressed="false" onclick="setGarageVehicleFilter('all')">
+          Tous <span id="allVehiclesCount">0</span>
+        </button>
+      </div>
+
       <div id="vehicleList"></div>
     </div>
   </main>

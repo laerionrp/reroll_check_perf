@@ -19,6 +19,7 @@ const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmiss
 const vehicleCollapseStates = new Map();
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
+let garageVehicleFilter = 'active';
 
 const GARAGE_STATUS_OPTIONS = [
   'Appartement',
@@ -136,6 +137,52 @@ function getGarageExitType(vehicle) {
   return normalizeGarage(vehicle.status) === 'vendu'
     ? 'vendu'
     : '';
+}
+
+function matchesGarageVehicleFilter(vehicle, filter) {
+  if (filter === 'all') return true;
+
+  const archived = isGarageVehicleArchived(vehicle);
+
+  if (filter === 'active') return !archived;
+
+  return archived && getGarageExitType(vehicle) === filter;
+}
+
+function updateGarageVehicleFilters() {
+  const counts = {
+    active: data.vehicles.filter(vehicle =>
+      matchesGarageVehicleFilter(vehicle, 'active')
+    ).length,
+    vendu: data.vehicles.filter(vehicle =>
+      matchesGarageVehicleFilter(vehicle, 'vendu')
+    ).length,
+    assurance: data.vehicles.filter(vehicle =>
+      matchesGarageVehicleFilter(vehicle, 'assurance')
+    ).length,
+    all: data.vehicles.length
+  };
+
+  document.getElementById('activeVehiclesCount').textContent = counts.active;
+  document.getElementById('soldVehiclesCount').textContent = counts.vendu;
+  document.getElementById('insuredVehiclesCount').textContent = counts.assurance;
+  document.getElementById('allVehiclesCount').textContent = counts.all;
+
+  document.querySelectorAll('.vehicle-filter').forEach(button => {
+    const selected = button.dataset.filter === garageVehicleFilter;
+
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+}
+
+function setGarageVehicleFilter(filter) {
+  const validFilters = ['active', 'vendu', 'assurance', 'all'];
+
+  if (!validFilters.includes(filter)) return;
+
+  garageVehicleFilter = filter;
+  renderVehiclesGarage();
 }
 
 function getTodayGarageInputDate() {
@@ -309,12 +356,31 @@ function renderVehiclesGarage() {
   const container = document.getElementById('vehicleList');
   container.innerHTML = '';
 
+  updateGarageVehicleFilters();
+
   if (!data.vehicles.length) {
     container.innerHTML = '<p class="muted">Aucun véhicule enregistré.</p>';
     return;
   }
 
-  data.vehicles.forEach((vehicle, vehicleIndex) => {
+  const visibleVehicles = data.vehicles.filter(vehicle =>
+    matchesGarageVehicleFilter(vehicle, garageVehicleFilter)
+  );
+
+  if (!visibleVehicles.length) {
+    const emptyMessages = {
+      active: 'Aucun véhicule actuellement en possession.',
+      vendu: 'Aucun véhicule vendu.',
+      assurance: "Aucun véhicule sorti par l'assurance.",
+      all: 'Aucun véhicule enregistré.'
+    };
+
+    container.innerHTML = `<p class="muted vehicle-filter-empty">${emptyMessages[garageVehicleFilter]}</p>`;
+    return;
+  }
+
+  visibleVehicles.forEach(vehicle => {
+    const vehicleIndex = data.vehicles.indexOf(vehicle);
     const archived = isGarageVehicleArchived(vehicle);
     const exitType = getGarageExitType(vehicle);
     const collapseKey = getVehicleCollapseKey(vehicle, vehicleIndex);
@@ -814,6 +880,7 @@ async function exitVehicle(cardId) {
       recoveredAmount
     }, token);
 
+    garageVehicleFilter = exitType;
     saveGarageCache();
     renderGarage();
   } catch (error) {
