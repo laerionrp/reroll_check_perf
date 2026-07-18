@@ -19,10 +19,17 @@ const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmiss
 
 const VEHICLE_COLLAPSE_STORAGE_KEY = 'rcp_vehicle_collapse_states';
 const SECTION_COLLAPSE_STORAGE_KEY = 'rcp_vehicle_section_states';
+const GARAGE_PANEL_COLLAPSE_STORAGE_KEY = 'rcp_garage_panel_states';
 const GARAGE_MASONRY_MIN_WIDTH = 1351;
 
 const vehicleCollapseStates = loadGarageUiStates(VEHICLE_COLLAPSE_STORAGE_KEY);
 const vehicleSectionStates = loadGarageUiStates(SECTION_COLLAPSE_STORAGE_KEY);
+const garagePanelStates = loadGarageUiStates(GARAGE_PANEL_COLLAPSE_STORAGE_KEY);
+const GARAGE_PANEL_DEFAULT_STATES = new Map([
+  ['actions', true],
+  ['cards', true],
+  ['inventory', false]
+]);
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
 let garageVehicleFilter = 'active';
@@ -374,6 +381,46 @@ function setGarageSectionCollapsed(section, sectionKey, collapsed) {
   header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   icon.textContent = collapsed ? '▼' : '▲';
   scheduleGarageMasonry();
+}
+
+function setGaragePanelCollapsed(panel, panelKey, collapsed, persist = true) {
+  panel.classList.toggle('collapsed', collapsed);
+
+  const toggle = panel.querySelector('.garage-panel-toggle');
+  const icon = panel.querySelector('.garage-panel-icon');
+
+  toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  icon.textContent = collapsed ? '▼' : '▲';
+
+  if (persist) {
+    garagePanelStates.set(panelKey, collapsed);
+    saveGarageUiStates(
+      GARAGE_PANEL_COLLAPSE_STORAGE_KEY,
+      garagePanelStates
+    );
+  }
+
+  scheduleGarageMasonry();
+}
+
+function initializeGaragePanels() {
+  document.querySelectorAll('[data-garage-panel]').forEach(panel => {
+    const panelKey = panel.dataset.garagePanel;
+    const collapsed = garagePanelStates.has(panelKey)
+      ? garagePanelStates.get(panelKey) === true
+      : GARAGE_PANEL_DEFAULT_STATES.get(panelKey) === true;
+    const toggle = panel.querySelector('.garage-panel-toggle');
+
+    setGaragePanelCollapsed(panel, panelKey, collapsed, false);
+
+    toggle.addEventListener('click', () => {
+      setGaragePanelCollapsed(
+        panel,
+        panelKey,
+        !panel.classList.contains('collapsed')
+      );
+    });
+  });
 }
 
 function toggleVehicleCard(card, collapseKey) {
@@ -1199,4 +1246,5 @@ if (document.fonts?.ready) {
   document.fonts.ready.then(scheduleGarageMasonry);
 }
 
+initializeGaragePanels();
 loadGarage();

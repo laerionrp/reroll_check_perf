@@ -37,81 +37,115 @@
 
     <div id="error" class="error"></div>
 
-    <div class="card">
-      <h2>Actions</h2>
+    <section class="card garage-panel collapsed" data-garage-panel="actions">
+      <button
+        type="button"
+        class="garage-panel-toggle"
+        aria-expanded="false"
+        aria-controls="garagePanelActionsContent"
+      >
+        <span>Actions</span>
+        <span class="garage-panel-icon" aria-hidden="true">▼</span>
+      </button>
 
-      <div class="grid">
-        <button onclick="toggleCardForm()">Acheter une carte grise</button>
-        <button onclick="toggleVehicleForm()">Ajouter un véhicule</button>
-      </div>
-
-      <div id="cardForm" class="inline-form" style="display:none;">
-        <select id="cardType">
-          <option value="normal">Carte grise ordinaire</option>
-          <option value="special">Carte grise spéciale</option>
-        </select>
-        <input id="cardDate" placeholder="Date achat ex : 03/07/2026">
-        <input id="cardPrice" placeholder="Prix payé">
-        <input id="cardComment" placeholder="Commentaire">
-        <button onclick="buyCard()">Valider l’achat</button>
-      </div>
-
-      <div id="vehicleForm" class="inline-form" style="display:none;">
-        <select id="cardSelect"></select>
-        <select id="vehicleSelect" onchange="updateGarageCardSelect()"></select>
-        <input id="customName" placeholder="Nom personnalisé">
-        <input id="plate" placeholder="Plaque">
-        <input id="codeAhm" placeholder="Code AHM, ex : AHM.Q01">
-        <input id="dateAchat" placeholder="Date achat ex : 03/07/2026">
-        <button onclick="addVehicle()">Ajouter</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="garage-card-stats-group">
-        <h3>Cartes grises normales</h3>
-        <div class="grid stats-grid">
-          <div class="stat"><span>Cartes possédées</span><strong id="normalCardsTotal">-</strong></div>
-          <div class="stat"><span>Cartes utilisées</span><strong id="normalCardsUsed">-</strong></div>
-          <div class="stat"><span>Cartes libres</span><strong id="normalCardsFree">-</strong></div>
-          <div class="stat"><span>Dépenses ventilées</span><strong title="Répartition non fournie par le frontend">—</strong></div>
+      <div id="garagePanelActionsContent" class="garage-panel-content">
+        <div class="grid">
+          <button onclick="toggleCardForm()">Acheter une carte grise</button>
+          <button onclick="toggleVehicleForm()">Ajouter un véhicule</button>
         </div>
 
-        <h3>Cartes grises spéciales</h3>
-        <div class="grid stats-grid">
-          <div class="stat"><span>Cartes possédées</span><strong id="specialCardsTotal">-</strong></div>
-          <div class="stat"><span>Cartes utilisées</span><strong id="specialCardsUsed">-</strong></div>
-          <div class="stat"><span>Cartes libres</span><strong id="specialCardsFree">-</strong></div>
-          <div class="stat"><span>Dépenses ventilées</span><strong title="Répartition non fournie par le frontend">—</strong></div>
+        <div id="cardForm" class="inline-form" style="display:none;">
+          <select id="cardType">
+            <option value="normal">Carte grise ordinaire</option>
+            <option value="special">Carte grise spéciale</option>
+          </select>
+          <input id="cardDate" placeholder="Date achat ex : 03/07/2026">
+          <input id="cardPrice" placeholder="Prix payé">
+          <input id="cardComment" placeholder="Commentaire">
+          <button onclick="buyCard()">Valider l’achat</button>
         </div>
+
+        <div id="vehicleForm" class="inline-form" style="display:none;">
+          <select id="cardSelect"></select>
+          <select id="vehicleSelect" onchange="updateGarageCardSelect()"></select>
+          <input id="customName" placeholder="Nom personnalisé">
+          <input id="plate" placeholder="Plaque">
+          <input id="codeAhm" placeholder="Code AHM, ex : AHM.Q01">
+          <input id="dateAchat" placeholder="Date achat ex : 03/07/2026">
+          <button onclick="addVehicle()">Ajouter</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card garage-panel collapsed" data-garage-panel="cards">
+      <button
+        type="button"
+        class="garage-panel-toggle"
+        aria-expanded="false"
+        aria-controls="garagePanelCardsContent"
+      >
+        <span>Cartes grises</span>
+        <span class="garage-panel-icon" aria-hidden="true">▼</span>
+      </button>
+
+      <div id="garagePanelCardsContent" class="garage-panel-content garage-card-stats-group">
+        <section class="garage-card-stats-category">
+          <h3>Cartes grises normales</h3>
+          <div class="grid stats-grid">
+            <div class="stat"><span>Cartes possédées</span><strong id="normalCardsTotal">-</strong></div>
+            <div class="stat"><span>Cartes utilisées</span><strong id="normalCardsUsed">-</strong></div>
+            <div class="stat"><span>Cartes libres</span><strong id="normalCardsFree">-</strong></div>
+            <div class="stat"><span>Dépenses ventilées</span><strong title="Répartition non fournie par le frontend">—</strong></div>
+          </div>
+        </section>
+
+        <section class="garage-card-stats-category">
+          <h3>Cartes grises spéciales</h3>
+          <div class="grid stats-grid">
+            <div class="stat"><span>Cartes possédées</span><strong id="specialCardsTotal">-</strong></div>
+            <div class="stat"><span>Cartes utilisées</span><strong id="specialCardsUsed">-</strong></div>
+            <div class="stat"><span>Cartes libres</span><strong id="specialCardsFree">-</strong></div>
+            <div class="stat"><span>Dépenses ventilées</span><strong title="Répartition non fournie par le frontend">—</strong></div>
+          </div>
+        </section>
 
         <div class="garage-card-spent-total">
           <span>Dépensé en cartes — total global</span>
           <strong id="cardsSpent">-</strong>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="card">
-      <h2>Inventaire</h2>
+    <section class="card garage-panel" data-garage-panel="inventory">
+      <button
+        type="button"
+        class="garage-panel-toggle"
+        aria-expanded="true"
+        aria-controls="garagePanelInventoryContent"
+      >
+        <span>Inventaire</span>
+        <span class="garage-panel-icon" aria-hidden="true">▲</span>
+      </button>
 
-      <div class="vehicle-filters" role="group" aria-label="Filtrer les véhicules">
-        <button type="button" class="vehicle-filter active" data-filter="active" aria-pressed="true" onclick="setGarageVehicleFilter('active')">
-          En possession <span id="activeVehiclesCount">0</span>
-        </button>
-        <button type="button" class="vehicle-filter" data-filter="vendu" aria-pressed="false" onclick="setGarageVehicleFilter('vendu')">
-          Vendus <span id="soldVehiclesCount">0</span>
-        </button>
-        <button type="button" class="vehicle-filter" data-filter="assurance" aria-pressed="false" onclick="setGarageVehicleFilter('assurance')">
-          Assurance <span id="insuredVehiclesCount">0</span>
-        </button>
-        <button type="button" class="vehicle-filter" data-filter="all" aria-pressed="false" onclick="setGarageVehicleFilter('all')">
-          Tous <span id="allVehiclesCount">0</span>
-        </button>
+      <div id="garagePanelInventoryContent" class="garage-panel-content">
+        <div class="vehicle-filters" role="group" aria-label="Filtrer les véhicules">
+          <button type="button" class="vehicle-filter active" data-filter="active" aria-pressed="true" onclick="setGarageVehicleFilter('active')">
+            En possession <span id="activeVehiclesCount">0</span>
+          </button>
+          <button type="button" class="vehicle-filter" data-filter="vendu" aria-pressed="false" onclick="setGarageVehicleFilter('vendu')">
+            Vendus <span id="soldVehiclesCount">0</span>
+          </button>
+          <button type="button" class="vehicle-filter" data-filter="assurance" aria-pressed="false" onclick="setGarageVehicleFilter('assurance')">
+            Assurance <span id="insuredVehiclesCount">0</span>
+          </button>
+          <button type="button" class="vehicle-filter" data-filter="all" aria-pressed="false" onclick="setGarageVehicleFilter('all')">
+            Tous <span id="allVehiclesCount">0</span>
+          </button>
+        </div>
+
+        <div id="vehicleList"></div>
       </div>
-
-      <div id="vehicleList"></div>
-    </div>
+    </section>
   </main>
 
   <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
