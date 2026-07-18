@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v11_cards';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v11_cards';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v11_cards';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v11_card_numbers';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v11_card_numbers';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v11_card_numbers';
 const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
@@ -383,7 +383,11 @@ function updateGarageCardSelect() {
   cardSelect.innerHTML = availableCards.length === 0
     ? `<option value="">Aucune carte grise ${label} libre</option>`
     : availableCards.map(
-        id => `<option value="${id}">Carte grise ${label} n°${id}</option>`
+        id => {
+          const displayNumber = data.cardDisplayNumbers?.[id] || id;
+
+          return `<option value="${id}">Carte grise ${label} n°${displayNumber}</option>`;
+        }
       ).join('');
 }
 
@@ -578,7 +582,7 @@ function renderVehiclesGarage() {
       >
         <h3>
           <span class="vehicle-title-text">
-            <span class="vehicle-card-label">Carte grise n°${escapeHtml(vehicle.card_id)}</span>
+            <span class="vehicle-card-label">Carte grise n°${escapeHtml(vehicle.card_number || vehicle.card_id)}</span>
             ${vehicle.code_ahm ? `<span class="vehicle-title-separator" aria-hidden="true"> — </span><span class="vehicle-ahm-code">${escapeHtml(vehicle.code_ahm)}</span>` : ''}
             <span class="vehicle-title-separator" aria-hidden="true"> — </span>
             <span class="vehicle-card-name">${escapeHtml(vehicle.vehicle_name)}</span>
