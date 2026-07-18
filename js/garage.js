@@ -326,30 +326,6 @@ function setGarageSectionCollapsed(section, sectionKey, collapsed) {
   icon.textContent = collapsed ? '▼' : '▲';
 }
 
-function openGarageVehicleFormForCategory(special) {
-  const vehicleForm = document.getElementById('vehicleForm');
-  const cardForm = document.getElementById('cardForm');
-  const vehicleSelect = document.getElementById('vehicleSelect');
-  const firstMatchingVehicle = data.catalog.find(vehicle =>
-    isSpecialGarageCatalogVehicle(vehicle) === special
-  );
-
-  if (!firstMatchingVehicle) {
-    setError(
-      special
-        ? 'Aucun véhicule spécial disponible dans le catalogue.'
-        : 'Aucun véhicule ordinaire disponible dans le catalogue.'
-    );
-    return;
-  }
-
-  cardForm.style.display = 'none';
-  vehicleForm.style.display = 'grid';
-  vehicleSelect.value = firstMatchingVehicle.name;
-
-  updateGarageCardSelect();
-}
-
 function toggleVehicleCard(card, collapseKey) {
   setVehicleCardCollapsed(
     card,
@@ -601,7 +577,6 @@ function renderVehiclesGarage() {
         <span class="garage-vehicle-section-icon" aria-hidden="true">${sectionCollapsed ? '▼' : '▲'}</span>
       </button>
       <div class="garage-vehicle-section-content">
-        ${garageVehicleFilter === 'active' ? `<button type="button" class="garage-add-vehicle-button">Ajouter un véhicule</button>` : ''}
         <div class="garage-vehicle-section-list"></div>
       </div>
     `;
@@ -619,14 +594,6 @@ function renderVehiclesGarage() {
         !sectionElement.classList.contains('collapsed')
       );
     });
-
-    const addButton = sectionElement.querySelector('.garage-add-vehicle-button');
-
-    if (addButton) {
-      addButton.addEventListener('click', () => {
-        openGarageVehicleFormForCategory(section.special);
-      });
-    }
 
     section.vehicles.forEach(vehicle => {
     const archived = isGarageVehicleArchived(vehicle);

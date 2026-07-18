@@ -56,9 +56,14 @@ function roundUpMoney(value) {
 }
 
 function money(value) {
+  const roundedValue = roundUpMoney(value);
+  const displayedValue = Object.is(roundedValue, -0)
+    ? 0
+    : roundedValue;
+
   return new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 0
-  }).format(roundUpMoney(value)) + ' $';
+  }).format(displayedValue) + ' $';
 }
 
 function showError(message) {

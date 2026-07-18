@@ -410,11 +410,6 @@ button {
   display: none;
 }
 
-.garage-add-vehicle-button {
-  width: 100%;
-  margin-bottom: 14px;
-}
-
 .garage-vehicle-section-list {
   display: grid;
   gap: 20px;
