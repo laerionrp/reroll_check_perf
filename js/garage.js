@@ -19,12 +19,14 @@ const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmiss
 
 const VEHICLE_COLLAPSE_STORAGE_KEY = 'rcp_vehicle_collapse_states';
 const SECTION_COLLAPSE_STORAGE_KEY = 'rcp_vehicle_section_states';
+const GARAGE_MASONRY_MIN_WIDTH = 1351;
 
 const vehicleCollapseStates = loadGarageUiStates(VEHICLE_COLLAPSE_STORAGE_KEY);
 const vehicleSectionStates = loadGarageUiStates(SECTION_COLLAPSE_STORAGE_KEY);
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
 let garageVehicleFilter = 'active';
+let garageMasonryFrame = 0;
 
 const GARAGE_STATUS_OPTIONS = [
   'Appartement',
@@ -96,6 +98,45 @@ function saveGarageUiStates(storageKey, states) {
   } catch (error) {
     /* L'interface reste utilisable si le stockage local est indisponible. */
   }
+}
+
+function layoutGarageMasonry(list) {
+  if (!list) return;
+
+  const items = Array.from(list.children);
+  const wideLayout = window.innerWidth >= GARAGE_MASONRY_MIN_WIDTH;
+
+  items.forEach(item => {
+    item.style.gridRowEnd = 'auto';
+  });
+
+  if (!wideLayout || items.length < 2) return;
+
+  const styles = window.getComputedStyle(list);
+  const rowHeight = Number.parseFloat(styles.gridAutoRows) || 8;
+  const itemGap = Number.parseFloat(
+    styles.getPropertyValue('--garage-masonry-gap')
+  ) || 20;
+
+  items.forEach(item => {
+    const itemHeight = item.getBoundingClientRect().height;
+    const rowSpan = Math.max(
+      1,
+      Math.ceil((itemHeight + itemGap) / rowHeight)
+    );
+
+    item.style.gridRowEnd = `span ${rowSpan}`;
+  });
+}
+
+function scheduleGarageMasonry() {
+  window.cancelAnimationFrame(garageMasonryFrame);
+
+  garageMasonryFrame = window.requestAnimationFrame(() => {
+    document.querySelectorAll('.garage-vehicle-section-list').forEach(
+      layoutGarageMasonry
+    );
+  });
 }
 
 function renderGarageStatusOptions(currentStatus) {
@@ -295,6 +336,7 @@ function scheduleGarageCommentResize(card) {
     if (!textarea || textarea.offsetParent === null) return;
 
     resizeGarageComment(textarea);
+    scheduleGarageMasonry();
   });
 }
 
@@ -312,6 +354,8 @@ function setVehicleCardCollapsed(card, collapseKey, collapsed) {
   if (!collapsed) {
     scheduleGarageCommentResize(card);
   }
+
+  scheduleGarageMasonry();
 }
 
 function setGarageSectionCollapsed(section, sectionKey, collapsed) {
@@ -324,6 +368,7 @@ function setGarageSectionCollapsed(section, sectionKey, collapsed) {
 
   header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   icon.textContent = collapsed ? '▼' : '▲';
+  scheduleGarageMasonry();
 }
 
 function toggleVehicleCard(card, collapseKey) {
@@ -347,6 +392,8 @@ function setVehicleOptionsOpen(card, collapseKey, open) {
   if (open) {
     scheduleGarageCommentResize(card);
   }
+
+  scheduleGarageMasonry();
 }
 
 function toggleVehicleOptions(card, collapseKey) {
@@ -566,7 +613,10 @@ function renderVehiclesGarage() {
   sections.forEach(section => {
     const sectionElement = document.createElement('section');
     const sectionCollapsed = vehicleSectionStates.get(section.key) === true;
-    sectionElement.className = 'garage-vehicle-section' + (sectionCollapsed ? ' collapsed' : '');
+    sectionElement.className =
+      'garage-vehicle-section' +
+      (section.special ? ' special' : '') +
+      (sectionCollapsed ? ' collapsed' : '');
     sectionElement.innerHTML = `
       <button
         type="button"
@@ -835,6 +885,7 @@ function renderVehiclesGarage() {
     if (commentTextarea) {
       commentTextarea.addEventListener('input', () => {
         resizeGarageComment(commentTextarea);
+        scheduleGarageMasonry();
       });
     }
 
@@ -847,6 +898,8 @@ function renderVehiclesGarage() {
 
     container.appendChild(sectionElement);
   });
+
+  scheduleGarageMasonry();
 }
 
 function renderPerfsGarage(vehicle) {
@@ -1133,6 +1186,12 @@ async function exitVehicle(cardId) {
   } catch (error) {
     setError(error.message);
   }
+}
+
+window.addEventListener('resize', scheduleGarageMasonry, { passive: true });
+
+if (document.fonts?.ready) {
+  document.fonts.ready.then(scheduleGarageMasonry);
 }
 
 loadGarage();

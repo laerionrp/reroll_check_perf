@@ -40,6 +40,78 @@ body.light {
   --input-text: #24201e;
 }
 
+/* =========================================================
+   Inventaire v1.2 — palette isolée et facilement réversible
+   ========================================================= */
+
+body.garage-page {
+  --bg: #171516;
+  --card: #211A1C;
+  --card-dark: #2D2023;
+  --vehicle-card: #2D2023;
+  --border: #5B3436;
+
+  --accent: #C95B3E;
+  --accent-red: #C95B3E;
+  --accent-dark: #3E2427;
+  --section-orange: #C95B3E;
+  --section-red: #5B3436;
+  --garage-amber: #E6A15A;
+  --garage-active-text: #312426;
+
+  --text: #F5ECE8;
+  --muted: #CBB8B3;
+  --separator: rgba(230, 161, 90, .22);
+  --input-bg: #2D2023;
+  --input-text: #F5ECE8;
+}
+
+body.garage-page.light {
+  --bg: #F6F1EE;
+  --card: #FFF9F6;
+  --card-dark: #F5E7E1;
+  --vehicle-card: #F5E7E1;
+  --border: #D5AAA0;
+
+  --accent: #B94F37;
+  --accent-red: #B94F37;
+  --accent-dark: #7D4037;
+  --section-orange: #B94F37;
+  --section-red: #9A5D52;
+  --garage-amber: #A66A2D;
+  --garage-active-text: #FFF9F6;
+
+  --text: #312426;
+  --muted: #766164;
+  --separator: rgba(166, 106, 45, .24);
+  --input-bg: #FFF9F6;
+  --input-text: #312426;
+}
+
+.garage-page .vehicle-filter.active {
+  background: var(--garage-amber);
+  border-color: var(--garage-amber);
+  color: var(--garage-active-text);
+}
+
+.garage-page .garage-vehicle-section-icon,
+.garage-page .vehicle-collapse-icon,
+.garage-page .vehicle-options-icon,
+.garage-page .vehicle-ahm-code,
+.garage-page .stat strong,
+.garage-page .garage-card-spent-total strong,
+.garage-page .theme-toggle {
+  color: var(--garage-amber);
+}
+
+.garage-page .garage-vehicle-section.special .garage-vehicle-section-toggle {
+  border-left: 4px solid var(--garage-amber);
+}
+
+.garage-page .vehicle-collapse-header:hover {
+  border-color: var(--garage-amber);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -413,6 +485,7 @@ button {
 .garage-vehicle-section-list {
   display: grid;
   gap: 20px;
+  min-width: 0;
 }
 
 .vehicle-ahm-code {
@@ -559,7 +632,12 @@ button {
 
   .garage-vehicle-section-list {
     grid-template-columns: repeat(2, minmax(620px, 1fr));
+    grid-auto-flow: row;
+    grid-auto-rows: 1px;
+    column-gap: 20px;
+    row-gap: 0;
     align-items: start;
+    --garage-masonry-gap: 20px;
   }
 
   .garage-page .vehicle {
@@ -576,6 +654,12 @@ button {
 
   .garage-page #vehicleList {
     grid-template-columns: 1fr;
+  }
+
+  .garage-vehicle-section-list {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap: 20px;
   }
 
   .perfs {
