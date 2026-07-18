@@ -96,22 +96,22 @@ body.garage-page.light {
   border-left: 4px solid var(--garage-amber);
 }
 
-/* Première palette v1.2, limitée aux fiches véhicule. */
+/* Palette v1.2 des fiches véhicule, isolée des grands fonds gris. */
 .garage-page .vehicle {
-  --card: #211A1C;
-  --card-dark: #2D2023;
-  --vehicle-card: #2D2023;
-  --border: #5B3436;
+  --card: #3F2E2E;
+  --card-dark: #3F2E2E;
+  --vehicle-card: #352828;
+  --border: #764141;
   --accent: #C95B3E;
   --accent-red: #C95B3E;
-  --accent-dark: #3E2427;
+  --accent-dark: #533636;
   --section-orange: #C95B3E;
-  --section-red: #5B3436;
+  --section-red: #6B3F3F;
   --garage-amber: #E6A15A;
   --text: #F5ECE8;
   --muted: #CBB8B3;
   --separator: rgba(230, 161, 90, .22);
-  --input-bg: #2D2023;
+  --input-bg: #3F2E2E;
   --input-text: #F5ECE8;
   color: var(--text);
 }
