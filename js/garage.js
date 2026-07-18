@@ -55,9 +55,14 @@ function roundUpMoneyGarage(value) {
 }
 
 function moneyGarage(value) {
+  const roundedValue = roundUpMoneyGarage(value);
+  const displayedValue = Object.is(roundedValue, -0)
+    ? 0
+    : roundedValue;
+
   return new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 0
-  }).format(roundUpMoneyGarage(value)) + ' $';
+  }).format(displayedValue) + ' $';
 }
 
 function setError(message) {
@@ -110,7 +115,7 @@ function layoutGarageMasonry(list) {
     item.style.gridRowEnd = 'auto';
   });
 
-  if (!wideLayout || items.length < 2) return;
+  if (!wideLayout || items.length === 0) return;
 
   const styles = window.getComputedStyle(list);
   const rowHeight = Number.parseFloat(styles.gridAutoRows) || 8;
