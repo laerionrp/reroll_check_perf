@@ -14,11 +14,19 @@
   <link rel="icon" type="image/png" sizes="192x192" href="images/favicon-192x192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#74220f">
+  <meta name="theme-color" content="#262626">
 </head>
 
 <body class="garage-page">
-  <header>Inventaire</header>
+  <header class="garage-header">
+    <div class="garage-header-inner">
+      <img class="garage-header-logo" src="images/rcp-logo.svg" alt="RCP">
+      <div class="garage-header-title-frame">
+        <span class="garage-header-title">Inventaire</span>
+      </div>
+      <span class="garage-header-balance" aria-hidden="true"></span>
+    </div>
+  </header>
 
   <main>
     <div class="tabs">
@@ -107,7 +115,7 @@
   </main>
 
   <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
-  <div class="app-version" title="Version de développement">🧪 v1.1-dev</div>
+  <div class="app-version" title="Mise à jour visuelle">🎨 v1.2</div>
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
