@@ -17,7 +17,11 @@ const perfLabelsGarage = {
 
 const perfOrderGarage = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
 
-const vehicleCollapseStates = new Map();
+const VEHICLE_COLLAPSE_STORAGE_KEY = 'rcp_vehicle_collapse_states';
+const SECTION_COLLAPSE_STORAGE_KEY = 'rcp_vehicle_section_states';
+
+const vehicleCollapseStates = loadGarageUiStates(VEHICLE_COLLAPSE_STORAGE_KEY);
+const vehicleSectionStates = loadGarageUiStates(SECTION_COLLAPSE_STORAGE_KEY);
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
 let garageVehicleFilter = 'active';
@@ -69,6 +73,29 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+function loadGarageUiStates(storageKey) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+
+    return new Map(
+      Object.entries(stored).map(([key, value]) => [key, value === true])
+    );
+  } catch (error) {
+    return new Map();
+  }
+}
+
+function saveGarageUiStates(storageKey, states) {
+  try {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify(Object.fromEntries(states))
+    );
+  } catch (error) {
+    /* L'interface reste utilisable si le stockage local est indisponible. */
+  }
 }
 
 function renderGarageStatusOptions(currentStatus) {
@@ -248,18 +275,8 @@ function parseGarageMoneyInput(value) {
   return Number(normalized);
 }
 
-function getVehicleCollapseKey(vehicle, index) {
-  const archiveState = isGarageVehicleArchived(vehicle)
-    ? 'archived'
-    : 'active';
-
-  return [
-    index,
-    vehicle.card_id,
-    vehicle.vehicle_name,
-    vehicle.created_at || vehicle.date_achat || '',
-    archiveState
-  ].join('|');
+function getVehicleCollapseKey(vehicle) {
+  return String(vehicle.card_id);
 }
 
 function resizeGarageComment(textarea) {
@@ -284,6 +301,7 @@ function scheduleGarageCommentResize(card) {
 function setVehicleCardCollapsed(card, collapseKey, collapsed) {
   card.classList.toggle('collapsed', collapsed);
   vehicleCollapseStates.set(collapseKey, collapsed);
+  saveGarageUiStates(VEHICLE_COLLAPSE_STORAGE_KEY, vehicleCollapseStates);
 
   const header = card.querySelector('.vehicle-collapse-header');
   const icon = card.querySelector('.vehicle-collapse-icon');
@@ -294,6 +312,42 @@ function setVehicleCardCollapsed(card, collapseKey, collapsed) {
   if (!collapsed) {
     scheduleGarageCommentResize(card);
   }
+}
+
+function setGarageSectionCollapsed(section, sectionKey, collapsed) {
+  section.classList.toggle('collapsed', collapsed);
+  vehicleSectionStates.set(sectionKey, collapsed);
+  saveGarageUiStates(SECTION_COLLAPSE_STORAGE_KEY, vehicleSectionStates);
+
+  const header = section.querySelector('.garage-vehicle-section-toggle');
+  const icon = section.querySelector('.garage-vehicle-section-icon');
+
+  header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  icon.textContent = collapsed ? '▼' : '▲';
+}
+
+function openGarageVehicleFormForCategory(special) {
+  const vehicleForm = document.getElementById('vehicleForm');
+  const cardForm = document.getElementById('cardForm');
+  const vehicleSelect = document.getElementById('vehicleSelect');
+  const firstMatchingVehicle = data.catalog.find(vehicle =>
+    isSpecialGarageCatalogVehicle(vehicle) === special
+  );
+
+  if (!firstMatchingVehicle) {
+    setError(
+      special
+        ? 'Aucun véhicule spécial disponible dans le catalogue.'
+        : 'Aucun véhicule ordinaire disponible dans le catalogue.'
+    );
+    return;
+  }
+
+  cardForm.style.display = 'none';
+  vehicleForm.style.display = 'grid';
+  vehicleSelect.value = firstMatchingVehicle.name;
+
+  updateGarageCardSelect();
 }
 
 function toggleVehicleCard(card, collapseKey) {
@@ -486,9 +540,22 @@ async function loadGarage() {
 }
 
 function renderGarage() {
-  document.getElementById('cardsTotal').textContent = data.cardsTotal;
-  document.getElementById('cardsUsed').textContent = data.cardsUsed;
-  document.getElementById('cardsFree').textContent = data.cardsFree;
+  const activeVehicles = data.vehicles.filter(
+    vehicle => !isGarageVehicleArchived(vehicle)
+  );
+  const normalCardsUsed = activeVehicles.filter(
+    vehicle => !isSpecialGarageVehicle(vehicle)
+  ).length;
+  const specialCardsUsed = activeVehicles.filter(isSpecialGarageVehicle).length;
+  const normalCardsFree = (data.freeCards || []).length;
+  const specialCardsFree = (data.freeSpecialCards || []).length;
+
+  document.getElementById('normalCardsTotal').textContent = normalCardsUsed + normalCardsFree;
+  document.getElementById('normalCardsUsed').textContent = normalCardsUsed;
+  document.getElementById('normalCardsFree').textContent = normalCardsFree;
+  document.getElementById('specialCardsTotal').textContent = specialCardsUsed + specialCardsFree;
+  document.getElementById('specialCardsUsed').textContent = specialCardsUsed;
+  document.getElementById('specialCardsFree').textContent = specialCardsFree;
   document.getElementById('cardsSpent').textContent = moneyGarage(data.cardsSpent || 0);
 
   document.getElementById('vehicleSelect').innerHTML = data.catalog.map(v =>
@@ -506,56 +573,65 @@ function renderVehiclesGarage() {
 
   updateGarageVehicleFilters();
 
-  if (!data.vehicles.length) {
-    container.innerHTML = '<p class="muted">Aucun véhicule enregistré.</p>';
-    return;
-  }
-
   const visibleVehicles = data.vehicles.filter(vehicle =>
     matchesGarageVehicleFilter(vehicle, garageVehicleFilter)
   );
-
-  if (!visibleVehicles.length) {
-    const emptyMessages = {
-      active: 'Aucun véhicule actuellement en possession.',
-      vendu: 'Aucun véhicule vendu.',
-      assurance: "Aucun véhicule sorti par l'assurance.",
-      all: 'Aucun véhicule enregistré.'
-    };
-
-    container.innerHTML = `<p class="muted vehicle-filter-empty">${emptyMessages[garageVehicleFilter]}</p>`;
-    return;
-  }
 
   const mainVehicles = visibleVehicles.filter(
     vehicle => !isSpecialGarageVehicle(vehicle)
   );
   const specialVehicles = visibleVehicles.filter(isSpecialGarageVehicle);
 
-  const sections = [];
-
-  if (mainVehicles.length) {
-    sections.push({ title: 'Parc principal', vehicles: mainVehicles });
-  }
-
-  if (specialVehicles.length) {
-    sections.push({ title: 'Véhicules spéciaux', vehicles: specialVehicles });
-  }
+  const sections = [
+    { key: 'normal', title: 'Véhicules', special: false, vehicles: mainVehicles },
+    { key: 'special', title: 'Véhicules spéciaux', special: true, vehicles: specialVehicles }
+  ];
 
   sections.forEach(section => {
     const sectionElement = document.createElement('section');
-    sectionElement.className = 'garage-vehicle-section';
-    sectionElement.innerHTML = `<h3 class="garage-vehicle-section-title">${section.title}</h3>`;
+    const sectionCollapsed = vehicleSectionStates.get(section.key) === true;
+    sectionElement.className = 'garage-vehicle-section' + (sectionCollapsed ? ' collapsed' : '');
+    sectionElement.innerHTML = `
+      <button
+        type="button"
+        class="garage-vehicle-section-toggle"
+        aria-expanded="${sectionCollapsed ? 'false' : 'true'}"
+      >
+        <span>${section.title}</span>
+        <span class="garage-vehicle-section-icon" aria-hidden="true">${sectionCollapsed ? '▼' : '▲'}</span>
+      </button>
+      <div class="garage-vehicle-section-content">
+        ${garageVehicleFilter === 'active' ? `<button type="button" class="garage-add-vehicle-button">Ajouter un véhicule</button>` : ''}
+        <div class="garage-vehicle-section-list"></div>
+      </div>
+    `;
 
-    const sectionList = document.createElement('div');
-    sectionList.className = 'garage-vehicle-section-list';
-    sectionElement.appendChild(sectionList);
+    const sectionList = sectionElement.querySelector('.garage-vehicle-section-list');
+
+    if (!section.vehicles.length) {
+      sectionList.innerHTML = '<p class="muted vehicle-filter-empty">Aucun véhicule dans cette catégorie.</p>';
+    }
+
+    sectionElement.querySelector('.garage-vehicle-section-toggle').addEventListener('click', () => {
+      setGarageSectionCollapsed(
+        sectionElement,
+        section.key,
+        !sectionElement.classList.contains('collapsed')
+      );
+    });
+
+    const addButton = sectionElement.querySelector('.garage-add-vehicle-button');
+
+    if (addButton) {
+      addButton.addEventListener('click', () => {
+        openGarageVehicleFormForCategory(section.special);
+      });
+    }
 
     section.vehicles.forEach(vehicle => {
-    const vehicleIndex = data.vehicles.indexOf(vehicle);
     const archived = isGarageVehicleArchived(vehicle);
     const exitType = getGarageExitType(vehicle);
-    const collapseKey = getVehicleCollapseKey(vehicle, vehicleIndex);
+    const collapseKey = getVehicleCollapseKey(vehicle);
     const collapsed = vehicleCollapseStates.has(collapseKey)
       ? vehicleCollapseStates.get(collapseKey)
       : archived;
@@ -582,7 +658,7 @@ function renderVehiclesGarage() {
       >
         <h3>
           <span class="vehicle-title-text">
-            <span class="vehicle-card-label">Carte grise n°${escapeHtml(vehicle.card_number || vehicle.card_id)}</span>
+            <span class="vehicle-card-label">Carte grise${section.special ? ' spécial' : ''} n°${escapeHtml(vehicle.card_number || vehicle.card_id)}</span>
             ${vehicle.code_ahm ? `<span class="vehicle-title-separator" aria-hidden="true"> — </span><span class="vehicle-ahm-code">${escapeHtml(vehicle.code_ahm)}</span>` : ''}
             <span class="vehicle-title-separator" aria-hidden="true"> — </span>
             <span class="vehicle-card-name">${escapeHtml(vehicle.vehicle_name)}</span>
