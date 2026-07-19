@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #1e1e1e;
   --card: #333333;
@@ -48,7 +50,7 @@ body.garage-page {
   --garage-page-bg: #1B1B1B;
   --garage-panel-bg: #303030;
   --garage-panel-border: #505050;
-  --garage-header-bg: #303030;
+  --garage-header-bg: #262626;
   --garage-section-bg: #383838;
   --garage-section-border: #505050;
   --garage-vehicle-bg: #5B3333;
@@ -77,7 +79,7 @@ body.garage-page.light {
   --garage-page-bg: #F0F0F0;
   --garage-panel-bg: #FFFFFF;
   --garage-panel-border: #C8C8C8;
-  --garage-header-bg: #FFFFFF;
+  --garage-header-bg: #303030;
   --garage-section-bg: #E3E3E3;
   --garage-section-border: #C8C8C8;
   --garage-vehicle-bg: #F5E7E1;
@@ -150,6 +152,12 @@ body.garage-page.light {
   color: #fff;
 }
 
+.garage-page.light .vehicle .vehicle-collapse-icon {
+  background: var(--garage-vehicle-inner);
+  border-color: var(--garage-action);
+  color: var(--garage-action);
+}
+
 .garage-page .vehicle .expense-main {
   color: var(--garage-muted);
 }
@@ -175,7 +183,7 @@ body {
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: "Montserrat", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 16px;
@@ -445,6 +453,7 @@ button {
   background: var(--input-bg);
   color: var(--input-text);
   min-width: 0;
+  font-family: inherit;
 }
 
 input,
@@ -1474,7 +1483,7 @@ button {
 .vehicle-archive-comment p {
   margin: 0;
   font-size: 1rem;
-  font-weight: normal;
+  font-weight: 400;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.45;
@@ -1549,7 +1558,7 @@ button {
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;
-  font-weight: normal;
+  font-weight: 400;
 }
 
 .vehicle-exit-box {
