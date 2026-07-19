@@ -52,6 +52,7 @@ body.garage-page {
   --garage-panel-border: #505050;
   --garage-header-bg: #262626;
   --garage-section-bg: #383838;
+  --garage-ahm-title: #5A5A5A;
   --garage-section-border: #505050;
   --garage-vehicle-bg: #5B3333;
   --garage-vehicle-inner: #6A3A3A;
@@ -84,6 +85,7 @@ body.garage-page.light {
   --garage-panel-border: #C8C8C8;
   --garage-header-bg: #303030;
   --garage-section-bg: #E3E3E3;
+  --garage-ahm-title: var(--garage-section-bg);
   --garage-section-border: #C8C8C8;
   --garage-vehicle-bg: #F5E7E1;
   --garage-vehicle-inner: #FFF9F6;
@@ -174,11 +176,11 @@ body.garage-page.light {
 }
 
 .garage-page .vehicle .vehicle-ahm-code {
-  color: var(--garage-section-bg);
+  color: var(--garage-ahm-title);
 }
 
 .garage-page .vehicle .vehicle-title-identity {
-  color: var(--garage-section-bg);
+  color: var(--garage-ahm-title);
 }
 
 .garage-page .vehicle .vehicle-title-identity .vehicle-ahm-code {
@@ -214,7 +216,7 @@ body.garage-page.light {
   background: transparent;
   border: 0;
   border-radius: 0;
-  color: var(--garage-section-bg);
+  color: var(--garage-ahm-title);
 }
 
 * {
@@ -636,14 +638,10 @@ button {
 .perf-row span:last-child {
   min-width: 72px;
   text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.garage-page .perf-row span:last-child {
   font-family: "Montserrat", sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .total,
