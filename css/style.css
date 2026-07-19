@@ -48,14 +48,28 @@ body.garage-page {
   --garage-page-bg: #1B1B1B;
   --garage-panel-bg: #303030;
   --garage-panel-border: #505050;
-  --garage-header-bg: #262626;
+  --garage-header-bg: #303030;
   --garage-section-bg: #383838;
-  --garage-section-border: #565656;
-  --accent: #C66A46;
-  --accent-red: #A94735;
-  --garage-amber: #D39A57;
-  --garage-title-start: #D6A05B;
-  --garage-title-end: #A9603D;
+  --garage-section-border: #505050;
+  --garage-vehicle-bg: #5B3333;
+  --garage-vehicle-inner: #6A3A3A;
+  --garage-action: #8B0000;
+  --garage-title: #B22222;
+  --garage-title-rgb: 178 34 34;
+  --garage-vehicle-border: rgb(var(--garage-title-rgb) / .62);
+  --garage-title-fill: rgb(var(--garage-title-rgb) / .14);
+  --garage-title-hover: rgb(var(--garage-title-rgb) / .42);
+  --garage-title-border-soft: rgb(var(--garage-title-rgb) / .62);
+  --garage-text: #F5F5F5;
+  --garage-muted: #D7BABA;
+  --garage-title-start: var(--garage-title);
+  --garage-title-end: var(--garage-action);
+  --accent: var(--garage-action);
+  --accent-red: var(--garage-action);
+  --border: var(--garage-panel-border);
+  --text: var(--garage-text);
+  --muted: var(--garage-muted);
+  --separator: rgb(var(--garage-title-rgb) / .32);
   background: var(--garage-page-bg);
 }
 
@@ -63,14 +77,17 @@ body.garage-page.light {
   --garage-page-bg: #F0F0F0;
   --garage-panel-bg: #FFFFFF;
   --garage-panel-border: #C8C8C8;
-  --garage-header-bg: #303030;
+  --garage-header-bg: #FFFFFF;
   --garage-section-bg: #E3E3E3;
-  --garage-section-border: #B8B8B8;
-  --accent: #C8551B;
-  --accent-red: #B8321F;
-  --garage-amber: #A66A2D;
-  --garage-title-start: #D09A58;
-  --garage-title-end: #A96139;
+  --garage-section-border: #C8C8C8;
+  --garage-vehicle-bg: #F5E7E1;
+  --garage-vehicle-inner: #FFF9F6;
+  --garage-action: #C8551B;
+  --garage-title: #9A5D52;
+  --garage-title-rgb: 154 93 82;
+  --garage-vehicle-border: #D5AAA0;
+  --garage-text: #312426;
+  --garage-muted: #766164;
 }
 
 .garage-page main > .card {
@@ -79,69 +96,70 @@ body.garage-page.light {
 }
 
 .garage-page .garage-vehicle-section-icon {
-  color: var(--garage-amber);
+  color: var(--garage-action);
 }
 
 .garage-page .garage-vehicle-section-toggle {
   background: var(--garage-section-bg);
   border-color: var(--garage-section-border);
-  color: #F5F5F5;
+  color: var(--garage-text);
 }
 
-.garage-page.light .garage-vehicle-section-toggle {
-  color: #303030;
+.garage-page .garage-vehicle-section:not(.special) .garage-vehicle-section-toggle {
+  border-left: 4px solid var(--garage-title);
 }
 
 .garage-page .garage-vehicle-section.special .garage-vehicle-section-toggle {
-  border-left: 4px solid var(--garage-amber);
+  border-left: 4px solid var(--garage-action);
 }
 
-/* Première palette v1.2, limitée aux fiches véhicule. */
+/* Palette v1.2 des fiches véhicule, isolée des grands fonds gris. */
 .garage-page .vehicle {
-  --card: #211A1C;
-  --card-dark: #2D2023;
-  --vehicle-card: #2D2023;
-  --border: #5B3436;
-  --accent: #C95B3E;
-  --accent-red: #C95B3E;
-  --accent-dark: #3E2427;
-  --section-orange: #C95B3E;
-  --section-red: #5B3436;
-  --garage-amber: #E6A15A;
-  --text: #F5ECE8;
-  --muted: #CBB8B3;
-  --separator: rgba(230, 161, 90, .22);
-  --input-bg: #2D2023;
-  --input-text: #F5ECE8;
+  --card: var(--garage-vehicle-inner);
+  --card-dark: var(--garage-vehicle-inner);
+  --vehicle-card: var(--garage-vehicle-bg);
+  --border: var(--garage-vehicle-border);
+  --accent: var(--garage-action);
+  --accent-red: var(--garage-action);
+  --accent-dark: var(--garage-action);
+  --section-orange: var(--garage-title);
+  --section-red: var(--garage-title);
+  --text: var(--garage-text);
+  --muted: var(--garage-muted);
+  --separator: var(--garage-vehicle-border);
+  --input-bg: var(--garage-vehicle-inner);
+  --input-text: var(--garage-text);
   color: var(--text);
 }
 
-.garage-page.light .vehicle {
-  --card: #FFF9F6;
-  --card-dark: #F5E7E1;
-  --vehicle-card: #F5E7E1;
-  --border: #D5AAA0;
-  --accent: #B94F37;
-  --accent-red: #B94F37;
-  --accent-dark: #7D4037;
-  --section-orange: #B94F37;
-  --section-red: #9A5D52;
-  --garage-amber: #A66A2D;
-  --text: #312426;
-  --muted: #766164;
-  --separator: rgba(166, 106, 45, .24);
-  --input-bg: #FFF9F6;
-  --input-text: #312426;
+.garage-page .vehicle .vehicle-ahm-code {
+  color: var(--garage-section-bg);
 }
 
-.garage-page .vehicle .vehicle-collapse-icon,
-.garage-page .vehicle .vehicle-options-icon,
-.garage-page .vehicle .vehicle-ahm-code {
-  color: var(--garage-amber);
+.garage-page .vehicle .vehicle-options-icon {
+  color: var(--garage-action);
 }
 
 .garage-page .vehicle .vehicle-collapse-header:hover {
-  border-color: var(--garage-amber);
+  border-color: var(--garage-title);
+}
+
+.garage-page .vehicle .vehicle-collapse-icon {
+  background: var(--garage-action);
+  border-color: var(--garage-title);
+  color: #fff;
+}
+
+.garage-page .vehicle .expense-main {
+  color: var(--garage-muted);
+}
+
+.garage-page.light .vehicle .vehicle-ahm-code {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--garage-section-bg);
 }
 
 * {
@@ -242,13 +260,13 @@ header {
 }
 
 .garage-page .page-header-title-frame::before {
-  border-top: 2px solid var(--garage-amber);
-  border-left: 2px solid var(--garage-amber);
+  border-top: 2px solid var(--garage-title);
+  border-left: 2px solid var(--garage-title);
 }
 
 .garage-page .page-header-title-frame::after {
-  border-right: 2px solid var(--garage-amber);
-  border-bottom: 2px solid var(--garage-amber);
+  border-right: 2px solid var(--garage-title);
+  border-bottom: 2px solid var(--garage-title);
 }
 
 .public-page .page-header-title-frame::before {
@@ -281,7 +299,11 @@ header {
     var(--garage-title-start),
     var(--garage-title-end)
   );
-  color: #2B211D;
+  color: var(--garage-text);
+}
+
+.garage-page.light .page-header-title {
+  color: var(--garage-text);
 }
 
 .public-page .page-header-title {
@@ -366,6 +388,16 @@ h2 {
 .garage-page .tab.active {
   background: var(--accent-red);
   border-color: var(--accent-red);
+}
+
+.garage-page:not(.light) .tab.active:hover {
+  background: var(--garage-title);
+  border-color: var(--garage-title);
+}
+
+.garage-page:not(.light) button:not(.secondary-button):not(.garage-panel-toggle):not(.garage-vehicle-section-toggle):not(.garage-logout):hover {
+  background: var(--garage-title);
+  border-color: var(--garage-title);
 }
 
 .garage-logout {
@@ -602,6 +634,123 @@ button {
   font-size: 28px;
 }
 
+/* Grands panneaux repliables de l'Inventaire. */
+.garage-page main > .garage-panel {
+  position: relative;
+  padding: 0 20px 20px;
+  margin-bottom: 14px;
+}
+
+.garage-page main > .garage-panel.collapsed {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.garage-panel-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: auto;
+  min-width: 190px;
+  margin: -1px 0 18px -1px;
+  padding: 8px 12px 8px 15px;
+  background: var(--garage-title-fill);
+  border-color: var(--garage-title-border-soft);
+  border-radius: 11px 0 9px 0;
+  color: var(--garage-text);
+  text-align: left;
+  font-size: 18px;
+  transition:
+    background-color .15s ease,
+    border-color .15s ease;
+}
+
+.garage-page:not(.light) .garage-panel-toggle:hover {
+  background: var(--garage-title-hover);
+  border-color: var(--garage-title);
+}
+
+.garage-page:not(.light) .garage-vehicle-section-toggle:hover {
+  border-color: var(--garage-title);
+}
+
+.garage-page.light .garage-panel-toggle {
+  background: var(--garage-section-bg);
+  border-color: var(--garage-section-border);
+  color: var(--garage-text);
+}
+
+.garage-page.light .garage-panel-toggle:hover {
+  background: var(--garage-section-bg);
+  border-color: var(--garage-action);
+}
+
+.garage-panel-icon,
+.garage-vehicle-section-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.garage-page:not(.light) .garage-panel-icon,
+.garage-page:not(.light) .garage-vehicle-section-icon {
+  background: var(--garage-action);
+  border-color: var(--garage-title);
+  color: #fff;
+}
+
+.garage-page.light .garage-panel-icon {
+  background: var(--garage-panel-bg);
+  border-color: var(--garage-title);
+  color: var(--garage-action);
+}
+
+.garage-panel.collapsed .garage-panel-toggle {
+  margin: -1px;
+  border-radius: 11px 8px 8px 11px;
+}
+
+.garage-panel.collapsed .garage-panel-content {
+  display: none;
+}
+
+.garage-card-stats-category {
+  padding: 16px;
+  background: rgb(var(--garage-title-rgb) / .06);
+  border: 1px solid var(--garage-title-border-soft);
+  border-radius: 10px;
+}
+
+.garage-card-stats-category + .garage-card-stats-category {
+  margin-top: 14px;
+}
+
+.garage-card-stats-category > h3 {
+  margin: 0 0 12px;
+  color: var(--garage-title);
+  font-size: 17px;
+}
+
+.garage-page.light .garage-card-stats-category {
+  background: var(--garage-section-bg);
+  border-color: var(--garage-section-border);
+}
+
+.garage-page.light .garage-card-stats-category > h3 {
+  color: var(--garage-title);
+}
+
+.garage-page:not(.light) .stat strong,
+.garage-page:not(.light) .garage-card-spent-total strong {
+  color: var(--garage-title);
+}
+
 .garage-page #vehicleList {
   display: grid;
   grid-template-columns: 1fr;
@@ -609,20 +758,11 @@ button {
 }
 
 .garage-vehicle-section + .garage-vehicle-section {
-  margin-top: 28px;
+  margin-top: 16px;
 }
 
-.garage-vehicle-section-title {
-  margin: 0 0 14px;
-}
-
-.garage-card-stats-group > h3 {
-  margin: 18px 0 10px;
-  color: var(--text);
-}
-
-.garage-card-stats-group > h3:first-child {
-  margin-top: 0;
+.garage-vehicle-section.collapsed + .garage-vehicle-section {
+  margin-top: 8px;
 }
 
 .garage-card-spent-total {
@@ -1212,6 +1352,12 @@ button {
 }
 
 .vehicle-collapse-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   font-size: 15px;
   line-height: 1;
   opacity: 0.9;
@@ -1327,6 +1473,8 @@ button {
 
 .vehicle-archive-comment p {
   margin: 0;
+  font-size: 1rem;
+  font-weight: normal;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.45;
@@ -1345,6 +1493,17 @@ button {
 .vehicle-options-icon {
   font-size: 14px;
   line-height: 1;
+}
+
+.garage-page:not(.light) .vehicle-options-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  background: var(--garage-action);
+  border: 1px solid var(--garage-title);
+  border-radius: 6px;
+  color: #fff;
 }
 
 .vehicle-options-panel {
@@ -1390,6 +1549,7 @@ button {
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;
+  font-weight: normal;
 }
 
 .vehicle-exit-box {
@@ -1435,6 +1595,28 @@ button {
 }
 
 @media (max-width: 700px) {
+  .garage-page main > .garage-panel {
+    padding: 0 14px 14px;
+  }
+
+  .garage-page main > .garage-panel.collapsed {
+    padding: 0;
+  }
+
+  .garage-panel-toggle {
+    min-width: 165px;
+    margin-bottom: 14px;
+    font-size: 17px;
+  }
+
+  .garage-panel.collapsed .garage-panel-toggle {
+    margin: -1px;
+  }
+
+  .garage-card-stats-category {
+    padding: 12px;
+  }
+
   .vehicle-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
