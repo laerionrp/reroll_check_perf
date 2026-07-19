@@ -56,12 +56,14 @@ body.garage-page {
   --garage-vehicle-bg: #5B3333;
   --garage-vehicle-inner: #6A3A3A;
   --garage-action: #8B0000;
-  --garage-title: #B22222;
-  --garage-title-rgb: 178 34 34;
-  --garage-vehicle-border: rgb(var(--garage-title-rgb) / .62);
+  --garage-title: #9E1B1B;
+  --garage-title-rgb: 158 27 27;
+  --garage-soft-accent: #B22222;
+  --garage-soft-accent-rgb: 178 34 34;
+  --garage-vehicle-border: rgb(var(--garage-soft-accent-rgb) / .62);
   --garage-title-fill: rgb(var(--garage-title-rgb) / .14);
-  --garage-title-hover: rgb(var(--garage-title-rgb) / .42);
-  --garage-title-border-soft: rgb(var(--garage-title-rgb) / .62);
+  --garage-title-hover: rgb(var(--garage-soft-accent-rgb) / .42);
+  --garage-title-border-soft: rgb(var(--garage-soft-accent-rgb) / .62);
   --garage-text: #F5F5F5;
   --garage-muted: #D7BABA;
   --garage-title-start: var(--garage-title);
@@ -71,7 +73,7 @@ body.garage-page {
   --border: var(--garage-panel-border);
   --text: var(--garage-text);
   --muted: var(--garage-muted);
-  --separator: rgb(var(--garage-title-rgb) / .32);
+  --separator: rgb(var(--garage-soft-accent-rgb) / .32);
   background: var(--garage-page-bg);
 }
 
@@ -87,6 +89,8 @@ body.garage-page.light {
   --garage-action: #C8551B;
   --garage-title: #9A5D52;
   --garage-title-rgb: 154 93 82;
+  --garage-soft-accent: var(--garage-title);
+  --garage-soft-accent-rgb: 154 93 82;
   --garage-vehicle-border: #D5AAA0;
   --garage-text: #312426;
   --garage-muted: #766164;
@@ -95,6 +99,10 @@ body.garage-page.light {
 .garage-page main > .card {
   background: var(--garage-panel-bg);
   border-color: var(--garage-panel-border);
+}
+
+.garage-page main > .garage-panel {
+  box-shadow: inset 4px 0 0 var(--garage-title);
 }
 
 .garage-page .garage-vehicle-section-icon {
@@ -143,12 +151,12 @@ body.garage-page.light {
 }
 
 .garage-page .vehicle .vehicle-collapse-header:hover {
-  border-color: var(--garage-title);
+  border-color: var(--garage-soft-accent);
 }
 
 .garage-page .vehicle .vehicle-collapse-icon {
   background: var(--garage-action);
-  border-color: var(--garage-title);
+  border-color: var(--garage-soft-accent);
   color: #fff;
 }
 
@@ -184,6 +192,7 @@ body {
 body {
   margin: 0;
   font-family: "Montserrat", Arial, sans-serif;
+  font-weight: 400;
   background: var(--bg);
   color: var(--text);
   font-size: 16px;
@@ -194,7 +203,7 @@ header {
   padding: 20px;
   text-align: center;
   font-size: 26px;
-  font-weight: bold;
+  font-weight: 700;
   color: #fff;
 }
 
@@ -296,7 +305,7 @@ header {
   border-radius: 999px;
   box-shadow: 0 5px 14px rgba(0, 0, 0, .25);
   font-size: 23px;
-  font-weight: bold;
+  font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -383,7 +392,7 @@ h2 {
   border-radius: 999px;
   padding: 10px 16px;
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -440,7 +449,7 @@ h2 {
 label {
   display: block;
   margin-bottom: 6px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 input,
@@ -460,13 +469,14 @@ input,
 select {
   width: 100%;
   margin-bottom: 15px;
+  font-weight: 400;
 }
 
 button {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -509,13 +519,13 @@ button {
 .info-label {
   color: var(--muted);
   margin-bottom: 4px;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .price,
 .info-value {
   font-size: 24px;
-  font-weight: bold;
+  font-weight: 600;
   color: var(--accent);
 }
 
@@ -544,6 +554,7 @@ button {
   text-transform: uppercase;
   text-align: center;
   font-size: 15px;
+  font-weight: 600;
 }
 
 .public-page .perf-block h3 {
@@ -561,7 +572,7 @@ button {
   align-items: center;
   padding: 8px 12px;
   margin: 0;
-  font-weight: normal;
+  font-weight: 400;
   background: transparent;
   border: none;
   min-width: 0;
@@ -596,7 +607,7 @@ button {
   padding: 20px;
   border-radius: 12px;
   font-size: 22px;
-  font-weight: bold;
+  font-weight: 600;
   line-height: 1.5;
   color: #fff;
 }
@@ -634,7 +645,7 @@ button {
 .stat span {
   display: block;
   color: var(--muted);
-  font-weight: bold;
+  font-weight: 500;
   margin-bottom: 6px;
 }
 
@@ -677,11 +688,11 @@ button {
 
 .garage-page:not(.light) .garage-panel-toggle:hover {
   background: var(--garage-title-hover);
-  border-color: var(--garage-title);
+  border-color: var(--garage-soft-accent);
 }
 
 .garage-page:not(.light) .garage-vehicle-section-toggle:hover {
-  border-color: var(--garage-title);
+  border-color: var(--garage-soft-accent);
 }
 
 .garage-page.light .garage-panel-toggle {
@@ -710,11 +721,12 @@ button {
 .garage-page:not(.light) .garage-panel-icon,
 .garage-page:not(.light) .garage-vehicle-section-icon {
   background: var(--garage-action);
-  border-color: var(--garage-title);
+  border-color: var(--garage-soft-accent);
   color: #fff;
 }
 
-.garage-page.light .garage-panel-icon {
+.garage-page.light .garage-panel-icon,
+.garage-page.light .garage-vehicle-section-icon {
   background: var(--garage-panel-bg);
   border-color: var(--garage-title);
   color: var(--garage-action);
@@ -744,6 +756,7 @@ button {
   margin: 0 0 12px;
   color: var(--garage-title);
   font-size: 17px;
+  font-weight: 600;
 }
 
 .garage-page.light .garage-card-stats-category {
@@ -782,7 +795,7 @@ button {
   padding: 14px 16px;
   border-top: 1px solid var(--separator);
   color: var(--text);
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .garage-card-spent-total strong {
@@ -802,7 +815,7 @@ button {
   color: #fff;
   text-align: left;
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .garage-vehicle-section-icon {
@@ -847,7 +860,7 @@ button {
   text-align: center;
   text-transform: uppercase;
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
   letter-spacing: .5px;
 }
 
@@ -893,7 +906,7 @@ button {
 
 .error {
   color: var(--danger);
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 12px;
 }
 
@@ -920,7 +933,7 @@ button {
   background: var(--card);
   color: var(--accent);
   font-size: 24px;
-  font-weight: normal;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   box-shadow: 0 8px 22px rgba(0,0,0,.25);
@@ -940,7 +953,7 @@ button {
   z-index: 998;
   color: var(--muted);
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 500;
   opacity: .85;
   pointer-events: none;
 }
@@ -1444,7 +1457,7 @@ button {
   margin-bottom: 5px;
   color: var(--muted);
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .vehicle-summary-value {
@@ -1510,7 +1523,7 @@ button {
   width: 24px;
   height: 22px;
   background: var(--garage-action);
-  border: 1px solid var(--garage-title);
+  border: 1px solid var(--garage-soft-accent);
   border-radius: 6px;
   color: #fff;
 }
