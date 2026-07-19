@@ -112,13 +112,13 @@ body.garage-page.light {
 }
 
 .garage-page .garage-vehicle-section {
-  --garage-section-accent: var(--garage-title);
-  --garage-section-accent-rgb: var(--garage-title-rgb);
+  --garage-section-accent: var(--garage-action);
+  --garage-section-accent-rgb: var(--garage-action-rgb);
 }
 
 .garage-page .garage-vehicle-section.special {
-  --garage-section-accent: var(--garage-action);
-  --garage-section-accent-rgb: var(--garage-action-rgb);
+  --garage-section-accent: var(--garage-title);
+  --garage-section-accent-rgb: var(--garage-title-rgb);
 }
 
 .garage-page .garage-vehicle-section-toggle {
@@ -128,19 +128,19 @@ body.garage-page.light {
 }
 
 .garage-page .garage-vehicle-section:not(.special) .garage-vehicle-section-toggle {
-  border-left: 4px solid var(--garage-title);
-}
-
-.garage-page .garage-vehicle-section.special .garage-vehicle-section-toggle {
   border-left: 4px solid var(--garage-action);
 }
 
+.garage-page .garage-vehicle-section.special .garage-vehicle-section-toggle {
+  border-left: 4px solid var(--garage-title);
+}
+
 .garage-page.light .garage-vehicle-section.collapsed:not(.special) .garage-vehicle-section-toggle {
-  border-left-color: var(--garage-title);
+  border-left-color: var(--garage-action);
 }
 
 .garage-page.light .garage-vehicle-section.special.collapsed .garage-vehicle-section-toggle {
-  border-left-color: var(--garage-action);
+  border-left-color: var(--garage-title);
 }
 
 /* Palette v1.2 des fiches véhicule, isolée des grands fonds gris. */
@@ -175,6 +175,14 @@ body.garage-page.light {
 
 .garage-page .vehicle .vehicle-ahm-code {
   color: var(--garage-section-bg);
+}
+
+.garage-page .vehicle .vehicle-title-identity {
+  color: var(--garage-section-bg);
+}
+
+.garage-page .vehicle .vehicle-title-identity .vehicle-ahm-code {
+  color: inherit;
 }
 
 .garage-page .vehicle .vehicle-options-icon {
@@ -633,7 +641,9 @@ button {
 }
 
 .garage-page .perf-row span:last-child {
+  font-family: "Montserrat", sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 400;
 }
 
 .total,
@@ -894,10 +904,17 @@ button {
   background: var(--section-red);
   color: #fff;
   text-align: center;
-  text-transform: uppercase;
+  text-transform: none;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: .5px;
+}
+
+.vehicle-title-text {
+  min-width: 0;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .vehicle-title-box .muted {
@@ -1231,18 +1248,20 @@ button {
 
 @media (max-width: 480px) {
   .vehicle-title-text {
-    display: grid;
-    gap: 2px;
+    display: block;
     min-width: 0;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 
   .vehicle-title-separator {
-    display: none;
+    display: inline;
   }
 
-  .vehicle-card-label,
+  .vehicle-title-identity,
   .vehicle-card-name {
-    display: block;
+    display: inline;
   }
 }
 
@@ -1504,8 +1523,19 @@ button {
   font-size: 16px;
 }
 
-.vehicle.options-open .vehicle-summary-optional {
+.vehicle.options-open .vehicle-summary-options-hidden {
   display: none;
+}
+
+.vehicle-summary-comment {
+  grid-column: 1 / -1;
+}
+
+.vehicle-summary-comment-value {
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .vehicle-sale-grid {
@@ -1608,6 +1638,37 @@ button {
   border-radius: 8px;
   font: inherit;
   font-weight: 400;
+}
+
+.vehicle-ahm-input {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.vehicle-ahm-prefix {
+  padding-left: 12px;
+  color: var(--input-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vehicle-ahm-input input {
+  width: 100%;
+  margin: 0;
+  padding-left: 2px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.vehicle-ahm-input:focus-within {
+  border-color: var(--accent);
 }
 
 .vehicle-exit-box {

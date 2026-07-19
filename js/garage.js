@@ -74,6 +74,28 @@ function moneyGarage(value) {
   }).format(displayedValue) + ' $';
 }
 
+function moneyOrDashGarage(value) {
+  const normalizedValue = Math.max(0, roundUpMoneyGarage(value));
+
+  return normalizedValue > 0
+    ? moneyGarage(normalizedValue)
+    : '—';
+}
+
+function normalizeGarageAhmSuffix(value) {
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/^(?:AHM\.)+/, '');
+}
+
+function formatGarageAhmCode(value) {
+  const suffix = normalizeGarageAhmSuffix(value);
+
+  return suffix ? `AHM.${suffix}` : '';
+}
+
 function setError(message) {
   document.getElementById('error').textContent = message || '';
 }
@@ -686,6 +708,9 @@ function renderGarage() {
   const specialCardsUsed = activeVehicles.filter(isSpecialGarageVehicle).length;
   const normalCardsFree = (data.freeCards || []).length;
   const specialCardsFree = (data.freeSpecialCards || []).length;
+  const normalCardsSpent = Math.max(0, Number(data.normalCardsSpent) || 0);
+  const specialCardsSpent = Math.max(0, Number(data.specialCardsSpent) || 0);
+  const cardsSpent = normalCardsSpent + specialCardsSpent;
 
   document.getElementById('normalCardsTotal').textContent = normalCardsUsed + normalCardsFree;
   document.getElementById('normalCardsUsed').textContent = normalCardsUsed;
@@ -693,7 +718,9 @@ function renderGarage() {
   document.getElementById('specialCardsTotal').textContent = specialCardsUsed + specialCardsFree;
   document.getElementById('specialCardsUsed').textContent = specialCardsUsed;
   document.getElementById('specialCardsFree').textContent = specialCardsFree;
-  document.getElementById('cardsSpent').textContent = moneyGarage(data.cardsSpent || 0);
+  document.getElementById('normalCardsSpent').textContent = moneyOrDashGarage(normalCardsSpent);
+  document.getElementById('specialCardsSpent').textContent = moneyOrDashGarage(specialCardsSpent);
+  document.getElementById('cardsSpent').textContent = moneyOrDashGarage(cardsSpent);
 
   document.getElementById('vehicleSelect').innerHTML = data.catalog.map(v =>
     `<option value="${escapeAttr(v.name)}">${escapeHtml(v.name)} — ${escapeHtml(v.category)}</option>`
@@ -773,6 +800,14 @@ function renderVehiclesGarage() {
       ? vehicleCollapseStates.get(collapseKey)
       : archived;
     const optionsOpen = !archived && vehicleOptionsStates.get(collapseKey) === true;
+    const cardNumber = escapeHtml(vehicle.card_number || vehicle.card_id);
+    const displayedAhmCode = escapeHtml(
+      formatGarageAhmCode(vehicle.code_ahm) || 'AHM.?'
+    );
+    const displayedCustomName = escapeHtml(vehicle.custom_name || '-');
+    const displayedCardNumber = section.special
+      ? `Spéciale N°${cardNumber}`
+      : `N°${cardNumber}`;
 
     const totalPerfs = Math.max(
       0,
@@ -795,8 +830,7 @@ function renderVehiclesGarage() {
       >
         <h3>
           <span class="vehicle-title-text">
-            <span class="vehicle-card-label">Carte grise${section.special ? ' spécial' : ''} n°${escapeHtml(vehicle.card_number || vehicle.card_id)}</span>
-            ${vehicle.code_ahm ? `<span class="vehicle-title-separator" aria-hidden="true"> — </span><span class="vehicle-ahm-code">${escapeHtml(vehicle.code_ahm)}</span>` : ''}
+            <span class="vehicle-title-identity"><span class="vehicle-ahm-code">${displayedAhmCode}</span><span class="vehicle-title-separator" aria-hidden="true"> — </span><span class="vehicle-custom-name">${displayedCustomName}</span></span>
             <span class="vehicle-title-separator" aria-hidden="true"> — </span>
             <span class="vehicle-card-name">${escapeHtml(vehicle.vehicle_name)}</span>
           </span>
@@ -807,23 +841,28 @@ function renderVehiclesGarage() {
       <div class="vehicle-collapse-content">
         <div class="vehicle-summary-grid">
           <div class="vehicle-summary-item">
+            <span class="vehicle-summary-label">Carte grise</span>
+            <strong class="vehicle-summary-value">${displayedCardNumber}</strong>
+          </div>
+
+          <div class="vehicle-summary-item">
             <span class="vehicle-summary-label">Gamme</span>
             <strong class="vehicle-summary-value">${escapeHtml(vehicle.category || '-')}</strong>
           </div>
 
-          <div class="vehicle-summary-item">
+          <div class="vehicle-summary-item vehicle-summary-options-hidden">
+            <span class="vehicle-summary-label">Plaque</span>
+            <strong class="vehicle-summary-value">${escapeHtml(vehicle.plate || '-')}</strong>
+          </div>
+
+          <div class="vehicle-summary-item vehicle-summary-options-hidden">
             <span class="vehicle-summary-label">Statut</span>
             <strong class="vehicle-summary-value">${escapeHtml(vehicle.status || '-')}</strong>
           </div>
 
-          <div class="vehicle-summary-item vehicle-summary-optional">
-            <span class="vehicle-summary-label">Nom personnalisé</span>
-            <strong class="vehicle-summary-value">${escapeHtml(vehicle.custom_name || '-')}</strong>
-          </div>
-
-          <div class="vehicle-summary-item vehicle-summary-optional">
-            <span class="vehicle-summary-label">Plaque</span>
-            <strong class="vehicle-summary-value">${escapeHtml(vehicle.plate || '-')}</strong>
+          <div class="vehicle-summary-item vehicle-summary-comment vehicle-summary-options-hidden">
+            <span class="vehicle-summary-label">Commentaire</span>
+            <span class="vehicle-summary-value vehicle-summary-comment-value">${escapeHtml(vehicle.commentaire || 'Aucun commentaire')}</span>
           </div>
         </div>
 
@@ -874,16 +913,7 @@ function renderVehiclesGarage() {
         `;
       }
 
-      vehicleHtml += `
-        <div class="vehicle-info-separator"></div>
-
-        <div class="vehicle-archive-comment">
-          <span class="vehicle-summary-label">Commentaire</span>
-          <p>${escapeHtml(vehicle.commentaire || 'Aucun commentaire')}</p>
-        </div>
-
-        <div class="vehicle-info-separator"></div>
-      `;
+      vehicleHtml += '<div class="vehicle-info-separator"></div>';
     } else {
       vehicleHtml += `
         <button
@@ -898,6 +928,18 @@ function renderVehiclesGarage() {
         <div class="vehicle-options-panel">
           <div class="vehicle-options-fields">
             <label>
+              Code AHM
+              <span class="vehicle-ahm-input">
+                <span class="vehicle-ahm-prefix">AHM.</span>
+                <input
+                  value="${escapeAttr(normalizeGarageAhmSuffix(vehicle.code_ahm))}"
+                  placeholder="Q01"
+                  onchange="updateGarageAhmField(${vehicle.card_id}, this)"
+                >
+              </span>
+            </label>
+
+            <label>
               Nom personnalisé
               <input value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
             </label>
@@ -905,15 +947,6 @@ function renderVehiclesGarage() {
             <label>
               Plaque
               <input value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
-            </label>
-
-            <label>
-              Code AHM
-              <input
-                value="${escapeAttr(vehicle.code_ahm || '')}"
-                placeholder="Ex : AHM.Q01"
-                onchange="updateField(${vehicle.card_id}, 'code_ahm', this.value)"
-              >
             </label>
 
             <label>
@@ -1137,7 +1170,7 @@ async function addVehicle() {
     vehicle_name: document.getElementById('vehicleSelect').value,
     custom_name: document.getElementById('customName').value,
     plate: document.getElementById('plate').value,
-    code_ahm: document.getElementById('codeAhm').value,
+    code_ahm: formatGarageAhmCode(document.getElementById('codeAhm').value),
     date_achat: document.getElementById('dateAchat').value
   };
 
@@ -1188,6 +1221,13 @@ async function updateField(cardId, field, value) {
   }
 
   return result;
+}
+
+async function updateGarageAhmField(cardId, input) {
+  const suffix = normalizeGarageAhmSuffix(input.value);
+
+  input.value = suffix;
+  return updateField(cardId, 'code_ahm', formatGarageAhmCode(suffix));
 }
 
 async function updateGarageStatus(cardId, status) {
