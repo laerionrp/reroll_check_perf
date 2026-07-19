@@ -34,6 +34,8 @@ const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
 let garageVehicleFilter = 'active';
 let garageMasonryFrame = 0;
+let garageViewportRestoreFrame = 0;
+let garageViewportAnchor = null;
 
 const GARAGE_STATUS_OPTIONS = [
   'Appartement',
@@ -112,6 +114,63 @@ function saveGarageUiStates(storageKey, states) {
   }
 }
 
+function restoreGarageViewportAnchor() {
+  if (!garageViewportAnchor) return;
+
+  const { element, top } = garageViewportAnchor;
+
+  if (!element.isConnected) {
+    garageViewportAnchor = null;
+    return;
+  }
+
+  const offset = element.getBoundingClientRect().top - top;
+
+  if (Math.abs(offset) > 0.5) {
+    window.scrollBy(0, offset);
+  }
+}
+
+function scheduleGarageViewportRestore(frameCount = 4) {
+  window.cancelAnimationFrame(garageViewportRestoreFrame);
+
+  const restoreOnNextFrame = () => {
+    restoreGarageViewportAnchor();
+    frameCount -= 1;
+
+    if (garageViewportAnchor && frameCount > 0) {
+      garageViewportRestoreFrame = window.requestAnimationFrame(
+        restoreOnNextFrame
+      );
+      return;
+    }
+
+    garageViewportRestoreFrame = 0;
+    garageViewportAnchor = null;
+  };
+
+  garageViewportRestoreFrame = window.requestAnimationFrame(
+    restoreOnNextFrame
+  );
+}
+
+function preserveGarageViewportPosition(element, updateState) {
+  if (!element) {
+    updateState();
+    return;
+  }
+
+  window.cancelAnimationFrame(garageViewportRestoreFrame);
+  garageViewportAnchor = {
+    element,
+    top: element.getBoundingClientRect().top
+  };
+
+  updateState();
+  restoreGarageViewportAnchor();
+  scheduleGarageViewportRestore();
+}
+
 function layoutGarageMasonry(list) {
   if (!list) return;
 
@@ -148,6 +207,7 @@ function scheduleGarageMasonry() {
     document.querySelectorAll('.garage-vehicle-section-list').forEach(
       layoutGarageMasonry
     );
+    restoreGarageViewportAnchor();
   });
 }
 
@@ -414,11 +474,13 @@ function initializeGaragePanels() {
     setGaragePanelCollapsed(panel, panelKey, collapsed, false);
 
     toggle.addEventListener('click', () => {
-      setGaragePanelCollapsed(
-        panel,
-        panelKey,
-        !panel.classList.contains('collapsed')
-      );
+      preserveGarageViewportPosition(toggle, () => {
+        setGaragePanelCollapsed(
+          panel,
+          panelKey,
+          !panel.classList.contains('collapsed')
+        );
+      });
     });
   });
 }
@@ -689,12 +751,18 @@ function renderVehiclesGarage() {
       sectionList.innerHTML = '<p class="muted vehicle-filter-empty">Aucun véhicule dans cette catégorie.</p>';
     }
 
-    sectionElement.querySelector('.garage-vehicle-section-toggle').addEventListener('click', () => {
-      setGarageSectionCollapsed(
-        sectionElement,
-        section.key,
-        !sectionElement.classList.contains('collapsed')
-      );
+    const sectionToggle = sectionElement.querySelector(
+      '.garage-vehicle-section-toggle'
+    );
+
+    sectionToggle.addEventListener('click', () => {
+      preserveGarageViewportPosition(sectionToggle, () => {
+        setGarageSectionCollapsed(
+          sectionElement,
+          section.key,
+          !sectionElement.classList.contains('collapsed')
+        );
+      });
     });
 
     section.vehicles.forEach(vehicle => {
@@ -914,21 +982,27 @@ function renderVehiclesGarage() {
     const collapseHeader = div.querySelector('.vehicle-collapse-header');
 
     collapseHeader.addEventListener('click', () => {
-      toggleVehicleCard(div, collapseKey);
+      preserveGarageViewportPosition(collapseHeader, () => {
+        toggleVehicleCard(div, collapseKey);
+      });
     });
 
     collapseHeader.addEventListener('keydown', event => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
 
       event.preventDefault();
-      toggleVehicleCard(div, collapseKey);
+      preserveGarageViewportPosition(collapseHeader, () => {
+        toggleVehicleCard(div, collapseKey);
+      });
     });
 
     const optionsButton = div.querySelector('.vehicle-options-toggle');
 
     if (optionsButton) {
       optionsButton.addEventListener('click', () => {
-        toggleVehicleOptions(div, collapseKey);
+        preserveGarageViewportPosition(optionsButton, () => {
+          toggleVehicleOptions(div, collapseKey);
+        });
       });
     }
 
