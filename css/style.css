@@ -993,8 +993,23 @@ button {
 
 .login-page {
   min-height: 100vh;
+  display: block;
+  background: var(--garage-page-bg);
+  color: var(--garage-text);
+}
+
+.login-page .page-header-tabs {
+  width: min(100%, 1650px);
+  margin: 12px auto 0;
+}
+
+.login-main {
   display: grid;
   place-items: center;
+  width: 100%;
+  min-height: calc(100vh - 170px);
+  margin: 0 auto;
+  padding: 40px 20px 90px;
 }
 
 .app-version {
@@ -1011,15 +1026,41 @@ button {
 
 .login-box {
   width: min(420px, 92vw);
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: var(--garage-panel-bg);
+  border: 1px solid var(--garage-panel-border);
   border-radius: 14px;
   padding: 24px;
+  box-shadow:
+    inset 4px 0 0 var(--garage-title),
+    0 14px 34px rgba(0, 0, 0, .22);
 }
 
 .login-box h1 {
   margin-top: 0;
-  color: var(--accent);
+  color: var(--garage-title);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.login-box input {
+  background: var(--garage-section-bg);
+  border-color: var(--garage-section-border);
+  color: var(--garage-text);
+}
+
+.login-box input::placeholder {
+  color: var(--garage-muted);
+  opacity: .8;
+}
+
+.login-box #loginButton {
+  width: 100%;
+  background: var(--garage-action);
+  border-color: var(--garage-action);
+}
+
+.login-box .error {
+  margin-top: 14px;
 }
 
 /* Grand écran : inventaire en 2 colonnes max */
@@ -1241,6 +1282,18 @@ button {
   .login-box {
     width: min(380px, 92vw);
     padding: 20px;
+  }
+
+  .login-page .page-header-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    margin-top: 10px;
+  }
+
+  .login-main {
+    min-height: auto;
+    margin: 0 auto;
+    padding: 32px 12px 90px;
   }
 }
 

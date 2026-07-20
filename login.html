@@ -13,21 +13,44 @@
   <link rel="icon" type="image/png" sizes="96x96" href="images/favicon-96.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon-180.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#74220f">
+  <meta name="theme-color" content="#262626">
 </head>
 
-<body class="login-page">
-  <div class="login-box">
-    <h1>Inventaire</h1>
-    <input id="password" type="password" placeholder="Mot de passe">
-    <button id="loginButton">Connexion</button>
-    <div id="error" class="error"></div>
-  </div>
+<body class="garage-page login-page">
+  <header class="page-header page-header--garage">
+    <div class="page-header-inner">
+      <img class="page-header-logo" src="images/header-logo-128.png" alt="RCP">
+      <div class="page-header-title-frame">
+        <span class="page-header-title">Connexion</span>
+      </div>
+      <span class="page-header-balance" aria-hidden="true"></span>
+    </div>
 
+    <nav
+      class="tabs page-header-tabs"
+      aria-label="Navigation principale"
+      data-app-navigation
+      data-active-page="inventory"
+    ></nav>
+  </header>
+
+  <main class="login-main">
+    <section class="login-box">
+      <h1>Accès à l’inventaire</h1>
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+      <button id="loginButton" type="button">Connexion</button>
+      <div id="error" class="error" role="status"></div>
+    </section>
+  </main>
+
+  <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
   <div class="app-version" title="Mise à jour visuelle">🎨 v1.2</div>
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/theme.js"></script>
   <script src="js/login.js"></script>
 </body>
 </html>

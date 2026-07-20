@@ -48,7 +48,7 @@ const GARAGE_STATUS_OPTIONS = [
 ];
 
 if (!token) {
-  window.location.href = 'login.html';
+  window.location.href = 'login.html?target=inventory';
 }
 
 function normalizeGarage(text) {
@@ -300,7 +300,7 @@ function redirectToGarageLogin(message) {
     sessionStorage.setItem('garage_login_message', message);
   }
 
-  window.location.replace('login.html');
+  window.location.replace('login.html?target=inventory');
 }
 
 async function logoutGarageUser() {

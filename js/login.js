@@ -3,6 +3,12 @@ const loginButton = document.getElementById('loginButton');
 const errorBox = document.getElementById('error');
 
 const loginMessage = sessionStorage.getItem('garage_login_message');
+const LOGIN_TARGETS = {
+  control: 'index.html',
+  inventory: 'garage.html'
+};
+const requestedTarget = new URLSearchParams(window.location.search).get('target');
+const loginDestination = LOGIN_TARGETS[requestedTarget] || LOGIN_TARGETS.inventory;
 
 if (loginMessage) {
   errorBox.textContent = loginMessage;
@@ -27,7 +33,7 @@ async function login() {
     localStorage.removeItem('rcp_garage_data_time');
     localStorage.removeItem('rcp_garage_data_token');
     localStorage.setItem('garage_token', result.token);
-    window.location.href = 'garage.html';
+    window.location.href = loginDestination;
 
   } catch (error) {
     errorBox.textContent = 'Erreur : ' + error.message;
