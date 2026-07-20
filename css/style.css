@@ -183,6 +183,11 @@ body.garage-page.light {
   color: var(--garage-ahm-title);
 }
 
+.garage-page .vehicle .vehicle-title-identity,
+.garage-page .vehicle .vehicle-card-name {
+  font-weight: 600;
+}
+
 .garage-page .vehicle .vehicle-title-identity .vehicle-ahm-code {
   color: inherit;
 }
