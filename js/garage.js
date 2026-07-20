@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v11_card_numbers';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v11_card_numbers';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v11_card_numbers';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_2_authoritative';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_2_authoritative';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_2_authoritative';
 const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
@@ -272,9 +272,39 @@ function parseStepsGarage(value) {
 }
 
 function saveGarageCache() {
+  requireCompatibleGarageData(data);
   localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(data));
   localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
   localStorage.setItem(GARAGE_CACHE_TOKEN_KEY, token);
+}
+
+function isCompatibleGarageData(candidate) {
+  return Boolean(
+    candidate &&
+    candidate.apiVersion === CONFIG.VERSION &&
+    Array.isArray(candidate.vehicles) &&
+    Array.isArray(candidate.catalog) &&
+    candidate.catalog.every(vehicle =>
+      Boolean(vehicle.vehicle_id) &&
+      typeof vehicle.is_job === 'boolean' &&
+      typeof vehicle.is_special === 'boolean' &&
+      Array.isArray(vehicle.allowed_perfs)
+    ) &&
+    candidate.vehicles.every(vehicle =>
+      typeof vehicle.is_special === 'boolean' &&
+      Array.isArray(vehicle.allowed_perfs)
+    )
+  );
+}
+
+function requireCompatibleGarageData(candidate) {
+  if (!isCompatibleGarageData(candidate)) {
+    throw new Error(
+      'Version de l’API Inventaire incompatible. Déploie le backend v1.2 consolidé.'
+    );
+  }
+
+  return candidate;
 }
 
 function clearGarageCache() {
@@ -540,42 +570,8 @@ function toggleVehicleOptions(card, collapseKey) {
   );
 }
 
-function isAirOrBoatGarage(vehicle) {
-  const catalogVehicle = data.catalog.find(v => v.name === String(vehicle.vehicle_name || ''));
-
-  if (!catalogVehicle) return false;
-
-  const dealership = normalizeGarage(catalogVehicle.dealership_id);
-  return dealership === 'air' || dealership === 'boat';
-}
-
 function isSpecialGarageVehicle(vehicle) {
-  const catalogVehicle = data.catalog.find(
-    v => v.name === String(vehicle.vehicle_name || '')
-  );
-  const dealership = normalizeGarage(catalogVehicle?.dealership_id);
-  const category = normalizeGarage(
-    catalogVehicle?.category || vehicle.category
-  );
-
-  return (
-    dealership === 'air' ||
-    dealership === 'boat' ||
-    dealership === 'trailer' ||
-    category === 'cycles'
-  );
-}
-
-function isSpecialGarageCatalogVehicle(vehicle) {
-  const dealership = normalizeGarage(vehicle?.dealership_id);
-  const category = normalizeGarage(vehicle?.category);
-
-  return (
-    dealership === 'air' ||
-    dealership === 'boat' ||
-    dealership === 'trailer' ||
-    category === 'cycles'
-  );
+  return vehicle?.is_special === true;
 }
 
 function updateGarageCardSelect() {
@@ -585,9 +581,9 @@ function updateGarageCardSelect() {
   if (!vehicleSelect || !cardSelect || !data) return;
 
   const selectedVehicle = data.catalog.find(
-    vehicle => vehicle.name === vehicleSelect.value
+    vehicle => String(vehicle.vehicle_id) === vehicleSelect.value
   );
-  const special = isSpecialGarageCatalogVehicle(selectedVehicle);
+  const special = selectedVehicle?.required_card_type === 'special';
   const availableCards = special
     ? (data.freeSpecialCards || [])
     : (data.freeCards || []);
@@ -605,8 +601,11 @@ function updateGarageCardSelect() {
 }
 
 function shouldShowPerfGarage(vehicle, perfName) {
-  if (!isAirOrBoatGarage(vehicle)) return true;
-  return normalizeGarage(perfName) === 'turbo';
+  const allowedPerfs = Array.isArray(vehicle?.allowed_perfs)
+    ? vehicle.allowed_perfs.map(normalizeGarage)
+    : [];
+
+  return allowedPerfs.includes(normalizeGarage(perfName));
 }
 
 function getPerfLabelGarage(perfName, index) {
@@ -647,7 +646,7 @@ async function loadGarage() {
       try {
         const parsedCache = JSON.parse(cached);
 
-        if (!parsedCache || !Array.isArray(parsedCache.vehicles)) {
+        if (!isCompatibleGarageData(parsedCache)) {
           throw new Error('Cache incomplet');
         }
 
@@ -666,7 +665,7 @@ async function loadGarage() {
 
       api('getGarageData', {}, token)
         .then(freshData => {
-          data = freshData;
+          data = requireCompatibleGarageData(freshData);
           saveGarageCache();
           renderGarage();
         })
@@ -684,7 +683,9 @@ async function loadGarage() {
       return;
     }
 
-    data = await api('getGarageData', {}, token);
+    data = requireCompatibleGarageData(
+      await api('getGarageData', {}, token)
+    );
     saveGarageCache();
     renderGarage();
 
@@ -699,6 +700,10 @@ async function loadGarage() {
 }
 
 function renderGarage() {
+  if (Array.isArray(data.dataWarnings) && data.dataWarnings.length) {
+    setError('Avertissement données : ' + data.dataWarnings.join(' | '));
+  }
+
   const activeVehicles = data.vehicles.filter(
     vehicle => !isGarageVehicleArchived(vehicle)
   );
@@ -723,7 +728,7 @@ function renderGarage() {
   document.getElementById('cardsSpent').textContent = moneyOrDashGarage(cardsSpent);
 
   document.getElementById('vehicleSelect').innerHTML = data.catalog.map(v =>
-    `<option value="${escapeAttr(v.name)}">${escapeHtml(v.name)} — ${escapeHtml(v.category)}</option>`
+    `<option value="${escapeAttr(v.vehicle_id)}">${escapeHtml(v.name)} — ${escapeHtml(v.category)}</option>`
   ).join('');
 
   updateGarageCardSelect();
@@ -809,10 +814,7 @@ function renderVehiclesGarage() {
       ? `Spéciale N°${cardNumber}`
       : `N°${cardNumber}`;
 
-    const totalPerfs = Math.max(
-      0,
-      Number(vehicle.depense_total || 0) - Number(vehicle.price_ttc || 0)
-    );
+    const totalPerfs = Math.max(0, Number(vehicle.performance_total) || 0);
 
     const div = document.createElement('div');
     div.className =
@@ -934,6 +936,7 @@ function renderVehiclesGarage() {
                 <input
                   value="${escapeAttr(normalizeGarageAhmSuffix(vehicle.code_ahm))}"
                   placeholder="Q01"
+                  maxlength="28"
                   onchange="updateGarageAhmField(${vehicle.card_id}, this)"
                 >
               </span>
@@ -941,12 +944,12 @@ function renderVehiclesGarage() {
 
             <label>
               Nom personnalisé
-              <input value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
+              <input maxlength="120" value="${escapeAttr(vehicle.custom_name || '')}" onchange="updateField(${vehicle.card_id}, 'custom_name', this.value)">
             </label>
 
             <label>
               Plaque
-              <input value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
+              <input maxlength="24" value="${escapeAttr(vehicle.plate || '')}" onchange="updateField(${vehicle.card_id}, 'plate', this.value)">
             </label>
 
             <label>
@@ -960,6 +963,7 @@ function renderVehiclesGarage() {
               Commentaire
               <textarea
                 placeholder="Commentaire libre"
+                maxlength="5000"
                 onchange="updateField(${vehicle.card_id}, 'commentaire', this.value)"
               >${escapeHtml(vehicle.commentaire || '')}</textarea>
             </label>
@@ -1077,6 +1081,8 @@ function renderPerfsGarage(vehicle) {
       return ia - ib;
     });
 
+  if (entries.length === 0) return '';
+
   entries.forEach(([perfName, levels]) => {
     const current = Number(vehicle[perfName + '_level']) || 0;
 
@@ -1167,7 +1173,7 @@ async function addVehicle() {
 
   const payload = {
     card_id: cardId,
-    vehicle_name: document.getElementById('vehicleSelect').value,
+    vehicle_id: document.getElementById('vehicleSelect').value,
     custom_name: document.getElementById('customName').value,
     plate: document.getElementById('plate').value,
     code_ahm: formatGarageAhmCode(document.getElementById('codeAhm').value),

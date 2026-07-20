@@ -69,16 +69,16 @@
           </select>
           <input id="cardDate" placeholder="Date achat ex : 03/07/2026">
           <input id="cardPrice" placeholder="Prix payé">
-          <input id="cardComment" placeholder="Commentaire">
+          <input id="cardComment" maxlength="5000" placeholder="Commentaire">
           <button onclick="buyCard()">Valider l’achat</button>
         </div>
 
         <div id="vehicleForm" class="inline-form" style="display:none;">
           <select id="cardSelect"></select>
           <select id="vehicleSelect" onchange="updateGarageCardSelect()"></select>
-          <input id="customName" placeholder="Nom personnalisé">
-          <input id="plate" placeholder="Plaque">
-          <input id="codeAhm" placeholder="Code AHM, ex : AHM.Q01">
+          <input id="customName" maxlength="120" placeholder="Nom personnalisé">
+          <input id="plate" maxlength="24" placeholder="Plaque">
+          <input id="codeAhm" maxlength="28" placeholder="Code AHM, ex : AHM.Q01">
           <input id="dateAchat" placeholder="Date achat ex : 03/07/2026">
           <button onclick="addVehicle()">Ajouter</button>
         </div>

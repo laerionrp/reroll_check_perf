@@ -38,6 +38,9 @@ Le projet est séparé en trois parties :
    - `Api.gs` : point d’entrée JSON `doPost()` et routage des actions ;
    - `Public.gs` : lecture des tarifs et performances publics ;
    - `Garage.gs` : authentification et gestion de l’inventaire ;
+   - `Schema.gs` : validation du schéma et migration manuelle v1.2 ;
+   - `Validation.gs` : validation des données reçues et lues ;
+   - `VehicleRules.gs` : règles autoritaires des véhicules et performances ;
    - `Settings.gs` : lecture des réglages ;
    - `Utils.gs` : fonctions utilitaires ;
    - `Config.gs` : noms des feuilles et constantes ;
@@ -71,6 +74,17 @@ leurs libellés ne sont pas strictement identiques. Leur centralisation
 est donc reportée à une évolution dédiée, avec tests des calculs et de
 l’affichage.
 
+## Configuration privée
+
+Le mot de passe de l’inventaire est stocké uniquement dans la propriété
+de script Apps Script `RCP_LOGIN_PASSWORD`. Il ne doit jamais être ajouté
+au dépôt Git.
+
+Après le premier déploiement de cette consolidation, exécuter une seule
+fois `migrateRcpV12Schema()` depuis l’éditeur Apps Script. La migration est
+idempotente : elle ajoute les colonnes manquantes et complète uniquement les
+cellules prévues restées vides, sans supprimer ni remplacer une valeur non vide.
+
 ## Version
 
-**1.0.0**
+**v1.2**

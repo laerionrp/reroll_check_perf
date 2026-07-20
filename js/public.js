@@ -1,8 +1,8 @@
 let appData = null;
 let selectedVehicle = null;
 
-const PUBLIC_CACHE_KEY = 'rcp_public_data';
-const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time';
+const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_2_authoritative';
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_2_authoritative';
 const PUBLIC_CACHE_DURATION = 24 * 60 * 60 * 1000;
 
 const perfLabels = {
@@ -77,13 +77,29 @@ function clearError() {
 }
 
 function isJobVehicle(vehicle) {
-  return normalize(vehicle.dealership_id) === 'job';
+  return vehicle?.is_job === true;
 }
 
-function isAirOrBoatVehicle(vehicle) {
-  const dealership = normalize(vehicle.dealership_id);
+function isCompatiblePublicData(candidate) {
+  return Boolean(
+    candidate &&
+    candidate.apiVersion === CONFIG.VERSION &&
+    Array.isArray(candidate.vehicles) &&
+    candidate.vehicles.every(vehicle =>
+      typeof vehicle.is_job === 'boolean' &&
+      Array.isArray(vehicle.public_allowed_perfs)
+    )
+  );
+}
 
-  return dealership === 'air' || dealership === 'boat';
+function requireCompatiblePublicData(candidate) {
+  if (!isCompatiblePublicData(candidate)) {
+    throw new Error(
+      'Version de l’API incompatible. Déploie le backend v1.2 consolidé.'
+    );
+  }
+
+  return candidate;
 }
 
 function getVehicleTTC(vehicle) {
@@ -119,6 +135,7 @@ function getPerfBasePrice(vehicle) {
 }
 
 function savePublicCache() {
+  requireCompatiblePublicData(appData);
   localStorage.setItem(
     PUBLIC_CACHE_KEY,
     JSON.stringify(appData)
@@ -145,18 +162,27 @@ async function loadData() {
         )
       ) || 0;
 
+    let cachedData = null;
+
+    try {
+      cachedData = cached ? JSON.parse(cached) : null;
+    } catch (error) {
+      localStorage.removeItem(PUBLIC_CACHE_KEY);
+      localStorage.removeItem(PUBLIC_CACHE_TIME_KEY);
+    }
+
     const cacheValid =
-      cached &&
+      isCompatiblePublicData(cachedData) &&
       Date.now() - cachedTime <
         PUBLIC_CACHE_DURATION;
 
     if (cacheValid) {
-      appData = JSON.parse(cached);
+      appData = cachedData;
       renderVehicleList();
 
       api('getPublicData')
         .then(freshData => {
-          appData = freshData;
+          appData = requireCompatiblePublicData(freshData);
           savePublicCache();
           renderVehicleList();
         })
@@ -165,7 +191,9 @@ async function loadData() {
       return;
     }
 
-    appData = await api('getPublicData');
+    appData = requireCompatiblePublicData(
+      await api('getPublicData')
+    );
     savePublicCache();
 
     if (
@@ -249,10 +277,10 @@ function clearVehicleDisplay() {
 }
 
 function renderSelectedVehicle() {
-  const vehicleId = Number(vehicleSelect.value);
+  const vehicleId = vehicleSelect.value;
 
   selectedVehicle = appData.vehicles.find(
-    vehicle => Number(vehicle.id) === vehicleId
+    vehicle => String(vehicle.id) === vehicleId
   );
 
   if (!selectedVehicle) {
@@ -299,11 +327,11 @@ function shouldShowPerformance(
   vehicle,
   perfName
 ) {
-  if (!isAirOrBoatVehicle(vehicle)) {
-    return true;
-  }
+  const allowedPerfs = Array.isArray(vehicle?.public_allowed_perfs)
+    ? vehicle.public_allowed_perfs.map(normalize)
+    : [];
 
-  return normalize(perfName) === 'turbo';
+  return allowedPerfs.includes(normalize(perfName));
 }
 
 function renderPerformances() {
