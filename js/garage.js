@@ -318,7 +318,8 @@ function isGarageSessionError(error) {
 
   return (
     message.includes('Session expirée') ||
-    message.includes('Connexion requise')
+    message.includes('Connexion requise') ||
+    message.includes('Connexion indisponible')
   );
 }
 
