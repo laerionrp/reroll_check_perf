@@ -625,8 +625,11 @@ function getCurrentPerfPrice(vehicle, perfName, index) {
 
   if (!level) return 0;
 
-  const priceBase = roundUpMoneyGarage(Number(vehicle.price_ht) * (1 + data.tvaPerf));
-  return roundUpMoneyGarage(priceBase * level.percent);
+  return calculatePerformancePrice(
+    Number(vehicle.price_ht),
+    level.percent,
+    data.tvaPerf
+  );
 }
 
 async function loadGarage() {

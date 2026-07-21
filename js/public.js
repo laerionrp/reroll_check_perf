@@ -126,14 +126,6 @@ function getVehiclePurchaseTotal(vehicle) {
   );
 }
 
-function getPerfBasePrice(vehicle) {
-  const priceHT = roundUpMoney(vehicle.price);
-
-  return roundUpMoney(
-    priceHT * (1 + appData.tvaPerf)
-  );
-}
-
 function savePublicCache() {
   requireCompatiblePublicData(appData);
   localStorage.setItem(
@@ -340,8 +332,9 @@ function renderPerformances() {
 
   container.innerHTML = '';
 
-  const perfBasePrice =
-    getPerfBasePrice(selectedVehicle);
+  const vehiclePriceHT = roundUpMoney(
+    selectedVehicle.price
+  );
 
   const entries = Object
     .entries(appData.performances)
@@ -417,8 +410,10 @@ function renderPerformances() {
     let cumulativeTotal = 0;
 
     levels.forEach((level, index) => {
-      const stepPrice = roundUpMoney(
-        perfBasePrice * level.percent
+      const stepPrice = calculatePerformancePrice(
+        vehiclePriceHT,
+        level.percent,
+        appData.tvaPerf
       );
 
       cumulativeTotal += stepPrice;
