@@ -1,8 +1,8 @@
 let appData = null;
 let selectedVehicle = null;
 
-const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_2_authoritative';
-const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_2_authoritative';
+const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_2_' + RcpTariff.get();
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_2_' + RcpTariff.get();
 const PUBLIC_CACHE_DURATION = 24 * 60 * 60 * 1000;
 
 const perfLabels = {
@@ -172,7 +172,7 @@ async function loadData() {
       appData = cachedData;
       renderVehicleList();
 
-      api('getPublicData')
+      api('getPublicData', { tariffScope: RcpTariff.get() })
         .then(freshData => {
           appData = requireCompatiblePublicData(freshData);
           savePublicCache();
@@ -184,7 +184,7 @@ async function loadData() {
     }
 
     appData = requireCompatiblePublicData(
-      await api('getPublicData')
+      await api('getPublicData', { tariffScope: RcpTariff.get() })
     );
     savePublicCache();
 
@@ -499,3 +499,4 @@ vehicleSelect.addEventListener(
 );
 
 loadData();
+window.addEventListener('rcp:tariff-scope-change', () => window.location.reload());

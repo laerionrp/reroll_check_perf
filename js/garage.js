@@ -1,9 +1,10 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_2_authoritative';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_2_authoritative';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_2_authoritative';
+const GARAGE_TARIFF_CACHE_SUFFIX = '_' + RcpTariff.get();
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_2' + GARAGE_TARIFF_CACHE_SUFFIX;
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_2' + GARAGE_TARIFF_CACHE_SUFFIX;
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_2' + GARAGE_TARIFF_CACHE_SUFFIX;
 const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const perfLabelsGarage = {
@@ -667,7 +668,7 @@ async function loadGarage() {
 
     if (cacheLoaded) {
 
-      api('getGarageData', {}, token)
+      api('getGarageData', { tariffScope: RcpTariff.get() }, token)
         .then(freshData => {
           data = requireCompatibleGarageData(freshData);
           saveGarageCache();
@@ -688,7 +689,7 @@ async function loadGarage() {
     }
 
     data = requireCompatibleGarageData(
-      await api('getGarageData', {}, token)
+      await api('getGarageData', { tariffScope: RcpTariff.get() }, token)
     );
     saveGarageCache();
     renderGarage();
@@ -1176,6 +1177,7 @@ async function addVehicle() {
   }
 
   const payload = {
+    tariffScope: RcpTariff.get(),
     card_id: cardId,
     vehicle_id: document.getElementById('vehicleSelect').value,
     custom_name: document.getElementById('customName').value,
@@ -1264,7 +1266,8 @@ async function togglePerf(cardId, perfName, level, checked) {
     ? {
         cardId,
         perfName,
-        newLevel: level
+      newLevel: level,
+      tariffScope: RcpTariff.get()
       }
     : {
         cardId,
@@ -1282,6 +1285,8 @@ async function togglePerf(cardId, perfName, level, checked) {
     loadGarage();
   }
 }
+
+window.addEventListener('rcp:tariff-scope-change', () => window.location.reload());
 
 function updateGarageExitForm(cardId) {
   const exitType = document.getElementById(`exitType-${cardId}`).value;

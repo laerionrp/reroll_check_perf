@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paramètres - Reroll Check Perf</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.ico">
+</head>
+<body class="garage-page settings-page">
+  <header class="page-header page-header--garage"><div class="page-header-inner">
+    <img class="page-header-logo" src="images/header-logo-128.png" alt="RCP">
+    <div class="page-header-title-frame"><span class="page-header-title">Paramètres</span></div>
+    <span class="page-header-balance" aria-hidden="true"></span>
+  </div></header>
+  <main>
+    <nav class="tabs" aria-label="Navigation principale" data-app-navigation data-active-page="settings">
+      <button type="button" class="tab garage-logout" data-navigation-tail onclick="logoutSettings()">Déconnexion</button>
+    </nav>
+    <div id="settingsError" class="error" role="status"></div>
+    <nav id="settingsTabs" class="settings-tabs" aria-label="Sections des paramètres"></nav>
+    <div id="settingsContent"></div>
+  </main>
+  <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
+  <div class="app-version" title="Profils tarifaires et paramètres">⚙️ v1.3.2</div>
+  <script src="js/config.js"></script><script src="js/api.js"></script>
+  <script src="js/tariff-profile.js"></script><script src="js/navigation.js"></script>
+  <script src="js/theme.js"></script><script src="js/settings.js"></script>
+</body>
+</html>

@@ -8,6 +8,11 @@ const RCP_NAV_ITEMS = Object.freeze([
     id: 'inventory',
     label: 'Inventaire',
     href: 'garage.html'
+  },
+  {
+    id: 'settings',
+    label: 'Paramètres',
+    href: 'settings.html'
   }
 ]);
 
@@ -53,3 +58,4 @@ function renderAppNavigation() {
 }
 
 renderAppNavigation();
+if (window.RcpTariff) window.RcpTariff.mount();
