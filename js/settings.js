@@ -8,6 +8,17 @@ const SETTINGS_TABS = [
 ];
 let settingsData = null;
 let syncPreview = null;
+let syncAnalysisState = null;
+let syncAnalysisTimer = null;
+let syncMessageTimer = null;
+const SYNC_WAIT_MESSAGES = [
+  'Ouverture du capot de DATA…',
+  'Comptage des boulons du catalogue…',
+  'Comparaison des véhicules, un par un, évidemment…',
+  'Interrogatoire musclé des tarifs suspects…',
+  'Vérification que personne n’a changé DATA en douce…',
+  'Presque terminé… normalement.'
+];
 
 function escapeSettings(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -48,9 +59,32 @@ function filterCatalogue() {
   const search = document.getElementById('catalogueSearch').value.toLowerCase(); const status = document.getElementById('catalogueStatus').value;
   document.querySelectorAll('#catalogueTable tbody tr').forEach(row => { row.hidden = !row.dataset.search.includes(search) || (status !== 'all' && row.dataset.status !== status); });
 }
+function formatElapsed(milliseconds) {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes} min ${String(seconds % 60).padStart(2, '0')} s` : `${seconds} s`;
+}
+function syncLines(item) {
+  const parts = [];
+  if (item.sourceLine) parts.push(`DATA ligne ${item.sourceLine}`);
+  if (item.targetLine) parts.push(`RCP_VEHICLES ligne ${item.targetLine}`);
+  return parts.length ? `<span class="sync-lines">${parts.map(escapeSettings).join(' · ')}</span>` : '';
+}
+function renderSyncDetails(preview) {
+  const groups = [];
+  if (preview.added.length) groups.push(`<h3>Nouveaux véhicules</h3><ul class="sync-detail-list">${preview.added.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}</li>`).join('')}</ul>`);
+  if (preview.changed.length) groups.push(`<h3>Informations modifiées</h3><ul class="sync-detail-list">${preview.changed.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}<ul>${(item.changes || []).map(change => `<li>${escapeSettings(change.label)} : <del>${escapeSettings(change.before || 'vide')}</del> → <ins>${escapeSettings(change.after || 'vide')}</ins></li>`).join('')}</ul></li>`).join('')}</ul>`);
+  if (preview.priceChanged.length) groups.push(`<h3>Tarifs modifiés</h3><ul class="sync-detail-list">${preview.priceChanged.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}<div>${escapeSettings(item.oldPrice)} $ → ${escapeSettings(item.newPrice)} $</div></li>`).join('')}</ul>`);
+  if (preview.retired.length) groups.push(`<h3>Véhicules absents de DATA</h3><ul class="sync-detail-list">${preview.retired.map(item => `<li><strong>${escapeSettings(item.name || item)}</strong>${syncLines(item)}</li>`).join('')}</ul>`);
+  return groups.length ? `<div class="sync-details">${groups.join('')}</div>` : '<p class="sync-clean">Aucun changement détecté : DATA et RCP_VEHICLES sont alignés.</p>';
+}
 function renderSync() {
+  if (syncAnalysisState && syncAnalysisState.running) {
+    const elapsed = Date.now() - syncAnalysisState.startedAt;
+    return panel('DATA → RCP_VEHICLES', `<div class="sync-progress" role="status" aria-live="polite"><div class="sync-progress-track"><span></span></div><strong>${escapeSettings(SYNC_WAIT_MESSAGES[syncAnalysisState.messageIndex])}</strong><span>Analyse en cours depuis ${formatElapsed(elapsed)}</span></div><button disabled>Analyse en cours…</button><p>L’analyse ne modifie aucune donnée.</p>`, 'sync');
+  }
   const preview = syncPreview;
-  const summary = preview ? `<div class="settings-grid"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article></div>${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
+  const summary = preview ? `<div class="settings-grid"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article></div>${preview.analysisDuration ? `<p class="sync-duration">Analyse terminée en ${escapeSettings(preview.analysisDuration)}.</p>` : ''}${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}${renderSyncDetails(preview)}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
   return panel('DATA → RCP_VEHICLES', `<button onclick="analyzeSync()">Analyser les changements</button>${summary}`, 'sync');
 }
 function renderHistory() {
@@ -66,7 +100,24 @@ async function loadSettings() {
   try { setSettingsError(''); settingsData = await api('getRcpSettingsData', {}, settingsToken); renderSettings(); }
   catch (error) { if (/Token|Session|Connexion indisponible/i.test(error.message)) { localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; return; } setSettingsError(error.message); }
 }
-async function analyzeSync() { try { syncPreview = await api('analyzeRcpVehicleSync', {}, settingsToken); renderSettings(); } catch (error) { setSettingsError(error.message); } }
+function stopSyncAnalysisFeedback() {
+  clearInterval(syncAnalysisTimer); clearInterval(syncMessageTimer);
+  syncAnalysisTimer = null; syncMessageTimer = null;
+}
+async function analyzeSync() {
+  if (syncAnalysisState && syncAnalysisState.running) return;
+  setSettingsError(''); syncPreview = null;
+  syncAnalysisState = { running: true, startedAt: Date.now(), messageIndex: 0 };
+  renderSettings();
+  syncAnalysisTimer = setInterval(renderSettings, 1000);
+  syncMessageTimer = setInterval(() => { syncAnalysisState.messageIndex = (syncAnalysisState.messageIndex + 1) % SYNC_WAIT_MESSAGES.length; renderSettings(); }, 12000);
+  try {
+    const preview = await api('analyzeRcpVehicleSync', {}, settingsToken);
+    preview.analysisDuration = formatElapsed(Date.now() - syncAnalysisState.startedAt);
+    syncPreview = preview;
+  } catch (error) { setSettingsError('Analyse impossible : ' + error.message); }
+  finally { stopSyncAnalysisFeedback(); syncAnalysisState = null; renderSettings(); }
+}
 async function applySync() { if (!syncPreview || !syncPreview.ready) return; try { await api('applyRcpVehicleSync', { sourceSignature: syncPreview.sourceSignature }, settingsToken); syncPreview = null; await loadSettings(); } catch (error) { setSettingsError(error.message); } }
 async function logoutSettings() { try { await api('logoutGarage', {}, settingsToken); } catch (_) {} localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; }
 window.addEventListener('rcp:tariff-scope-change', renderSettings); loadSettings();
