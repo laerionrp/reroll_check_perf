@@ -11,6 +11,8 @@ const SETTINGS_TABS = [
 let settingsData = null;
 let syncPreview = null;
 let syncAnalysisState = null;
+let syncApplyState = null;
+let syncApplyResult = null;
 let syncAnalysisTimer = null;
 let syncMessageTimer = null;
 const SYNC_WAIT_MESSAGES = [
@@ -113,9 +115,14 @@ function renderSync() {
     const elapsed = Date.now() - syncAnalysisState.startedAt;
     return panel('DATA → RCP_VEHICLES', `<div class="sync-progress" role="status" aria-live="polite"><div class="sync-progress-track"><span></span></div><strong>${escapeSettings(SYNC_WAIT_MESSAGES[syncAnalysisState.messageIndex])}</strong><span>Analyse en cours depuis ${formatElapsed(elapsed)}</span></div><button disabled>Analyse en cours…</button><p>L’analyse ne modifie aucune donnée.</p>`, 'sync');
   }
+  if (syncApplyState && syncApplyState.running) {
+    const elapsed = Date.now() - syncApplyState.startedAt;
+    return panel('DATA → RCP_VEHICLES', `<div class="sync-progress" role="status" aria-live="polite"><div class="sync-progress-track"><span></span></div><strong>Synchronisation en cours…</strong><span>Application des changements depuis ${formatElapsed(elapsed)}</span></div><button disabled>Synchronisation en cours…</button><p>Ne ferme pas cette page pendant l’opération.</p>`, 'sync');
+  }
   const preview = syncPreview;
+  const applied = syncApplyResult ? `<div class="sync-clean" role="status" aria-live="polite"><strong>Synchronisation terminée avec succès.</strong><br>${syncApplyResult.added} ajout${syncApplyResult.added > 1 ? 's' : ''} · ${syncApplyResult.updated} mise${syncApplyResult.updated > 1 ? 's' : ''} à jour · ${syncApplyResult.retired} retrait${syncApplyResult.retired > 1 ? 's' : ''} · ${syncApplyResult.priceHistoryCreated} tarif${syncApplyResult.priceHistoryCreated > 1 ? 's' : ''} historisé${syncApplyResult.priceHistoryCreated > 1 ? 's' : ''}<br>Terminée en ${escapeSettings(syncApplyResult.duration)}.</div>` : '';
   const summary = preview ? `<div class="settings-grid sync-summary"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article><article>Inchangés<strong>${(preview.unchanged || []).length}</strong></article></div>${preview.analysisDuration ? `<p class="sync-duration">Analyse terminée en ${escapeSettings(preview.analysisDuration)}.</p>` : ''}${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}${renderSyncDetails(preview)}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
-  return panel('DATA → RCP_VEHICLES', `<button onclick="analyzeSync()">Analyser les changements</button>${summary}`, 'sync');
+  return panel('DATA → RCP_VEHICLES', `${applied}<button onclick="analyzeSync()">Analyser les changements</button>${summary}`, 'sync');
 }
 function renderHistory() {
   const prices = settingsData.priceHistory || []; const logs = settingsData.syncLog || [];
@@ -136,7 +143,7 @@ function stopSyncAnalysisFeedback() {
 }
 async function analyzeSync() {
   if (syncAnalysisState && syncAnalysisState.running) return;
-  setSettingsError(''); syncPreview = null;
+  setSettingsError(''); syncPreview = null; syncApplyResult = null;
   syncAnalysisState = { running: true, startedAt: Date.now(), messageIndex: 0 };
   renderSettings();
   syncAnalysisTimer = setInterval(renderSettings, 1000);
@@ -148,6 +155,19 @@ async function analyzeSync() {
   } catch (error) { setSettingsError('Analyse impossible : ' + error.message); }
   finally { stopSyncAnalysisFeedback(); syncAnalysisState = null; renderSettings(); }
 }
-async function applySync() { if (!syncPreview || !syncPreview.ready) return; try { await api('applyRcpVehicleSync', { sourceSignature: syncPreview.sourceSignature }, settingsToken); syncPreview = null; await loadSettings(); } catch (error) { setSettingsError(error.message); } }
+async function applySync() {
+  if (!syncPreview || !syncPreview.ready || (syncApplyState && syncApplyState.running)) return;
+  setSettingsError(''); syncApplyResult = null;
+  syncApplyState = { running: true, startedAt: Date.now() };
+  renderSettings();
+  syncAnalysisTimer = setInterval(renderSettings, 1000);
+  try {
+    const result = await api('applyRcpVehicleSync', { sourceSignature: syncPreview.sourceSignature }, settingsToken);
+    syncApplyResult = { ...result, duration: formatElapsed(Date.now() - syncApplyState.startedAt) };
+    syncPreview = null;
+    await loadSettings();
+  } catch (error) { setSettingsError('Synchronisation impossible : ' + error.message); }
+  finally { clearInterval(syncAnalysisTimer); syncAnalysisTimer = null; syncApplyState = null; renderSettings(); }
+}
 async function logoutSettings() { try { await api('logoutGarage', {}, settingsToken); } catch (_) {} localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; }
 window.addEventListener('rcp:tariff-scope-change', renderSettings); loadSettings();
