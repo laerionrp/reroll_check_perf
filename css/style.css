@@ -1479,6 +1479,14 @@ button {
 .settings-table-wrap { overflow:auto; }
 .settings-table-wrap table { width:100%; border-collapse:collapse; }
 .settings-table-wrap th,.settings-table-wrap td { padding:10px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+.performance-settings-list { display:grid; gap:12px; }
+.performance-settings-item { margin:0; padding:0 18px 18px; overflow:hidden; }
+.performance-settings-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; margin:0 0 12px; border-left:3px solid var(--accent-red, var(--accent)); background:transparent; color:var(--text); text-align:left; }
+.performance-settings-toggle small { color:var(--muted); font-size:.82em; font-weight:500; }
+.performance-settings-item.collapsed { padding-bottom:0; }
+.performance-settings-item.collapsed .performance-settings-toggle { margin-bottom:0; }
+.performance-settings-item.collapsed .performance-settings-body { display:none; }
+.sync-summary { grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); }
 .sync-progress { display:flex; flex-direction:column; gap:8px; margin:0 0 14px; padding:14px; border:1px solid var(--border); border-radius:10px; background:rgba(0,0,0,.08); }
 .sync-progress-track { height:8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.1); }
 .sync-progress-track span { display:block; width:38%; height:100%; border-radius:inherit; background:var(--accent-red, var(--accent)); animation:sync-progress-slide 1.35s ease-in-out infinite; }

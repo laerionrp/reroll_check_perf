@@ -2,6 +2,8 @@ const settingsToken = localStorage.getItem('garage_token') || '';
 const settingsError = document.getElementById('settingsError');
 const settingsContent = document.getElementById('settingsContent');
 const SETTINGS_TAB_KEY = 'rcp_settings_active_tab_v1';
+const SETTINGS_PERFORMANCE_KEY = 'rcp_settings_open_performance_v1';
+const PERFORMANCE_ORDER = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
 const SETTINGS_TABS = [
   ['tariffs', 'Tarifs'], ['performances', 'Performances'], ['catalogue', 'Catalogue'],
   ['sync', 'Synchronisation'], ['history', 'Historique']
@@ -49,7 +51,35 @@ function renderTariffs() {
 }
 function renderPerformances() {
   const rows = settingsData.performanceRates || [];
-  return panel('Coefficients et niveaux', `<div class="settings-table-wrap"><table><thead><tr><th>Performance</th><th>Niveau</th><th>Libellé</th><th>Coefficient</th><th>Active</th></tr></thead><tbody>${rows.map(item => `<tr><td>${escapeSettings(item.performance_label)}</td><td>${escapeSettings(item.level)}</td><td>${escapeSettings(item.level_label)}</td><td>${formatPercent(item.coefficient)}</td><td>${item.active ? 'Oui' : 'Non'}</td></tr>`).join('')}</tbody></table></div>`, 'performances');
+  const groups = rows.reduce((result, item) => {
+    const key = String(item.performance_key || '').toLowerCase();
+    if (!result[key]) result[key] = [];
+    result[key].push(item);
+    return result;
+  }, {});
+  const availableKeys = PERFORMANCE_ORDER.filter(key => groups[key] && groups[key].length);
+  Object.keys(groups).forEach(key => { if (!availableKeys.includes(key)) availableKeys.push(key); });
+  const savedKey = localStorage.getItem(SETTINGS_PERFORMANCE_KEY);
+  const openKey = savedKey === '__none__' ? '' : (availableKeys.includes(savedKey) ? savedKey : availableKeys[0] || '');
+
+  return `<div class="performance-settings-list">${availableKeys.map(key => {
+    const levels = groups[key].slice().sort((a, b) => Number(a.display_order || a.level) - Number(b.display_order || b.level));
+    const label = levels[0].performance_label || key;
+    const isOpen = key === openKey;
+    return `<section class="card performance-settings-item ${isOpen ? '' : 'collapsed'}">
+      <button type="button" class="performance-settings-toggle" aria-expanded="${isOpen}" onclick="togglePerformanceSettings('${escapeSettings(key)}', ${isOpen})">
+        <span>${escapeSettings(label)} <small>· ${levels.length} niveau${levels.length > 1 ? 'x' : ''}</small></span>
+        <span aria-hidden="true">${isOpen ? '▲' : '▼'}</span>
+      </button>
+      <div class="performance-settings-body">
+        <div class="settings-table-wrap"><table><thead><tr><th>Niveau</th><th>Libellé</th><th>Coefficient</th><th>Active</th></tr></thead><tbody>${levels.map(item => `<tr><td>${escapeSettings(item.level)}</td><td>${escapeSettings(item.level_label)}</td><td>${formatPercent(item.coefficient)}</td><td>${item.active ? 'Oui' : 'Non'}</td></tr>`).join('')}</tbody></table></div>
+      </div>
+    </section>`;
+  }).join('')}</div>`;
+}
+function togglePerformanceSettings(key, isOpen) {
+  localStorage.setItem(SETTINGS_PERFORMANCE_KEY, isOpen ? '__none__' : key);
+  renderSettings();
 }
 function renderCatalogue() {
   const vehicles = settingsData.vehicles || [];
@@ -84,7 +114,7 @@ function renderSync() {
     return panel('DATA → RCP_VEHICLES', `<div class="sync-progress" role="status" aria-live="polite"><div class="sync-progress-track"><span></span></div><strong>${escapeSettings(SYNC_WAIT_MESSAGES[syncAnalysisState.messageIndex])}</strong><span>Analyse en cours depuis ${formatElapsed(elapsed)}</span></div><button disabled>Analyse en cours…</button><p>L’analyse ne modifie aucune donnée.</p>`, 'sync');
   }
   const preview = syncPreview;
-  const summary = preview ? `<div class="settings-grid"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article></div>${preview.analysisDuration ? `<p class="sync-duration">Analyse terminée en ${escapeSettings(preview.analysisDuration)}.</p>` : ''}${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}${renderSyncDetails(preview)}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
+  const summary = preview ? `<div class="settings-grid sync-summary"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article><article>Inchangés<strong>${(preview.unchanged || []).length}</strong></article></div>${preview.analysisDuration ? `<p class="sync-duration">Analyse terminée en ${escapeSettings(preview.analysisDuration)}.</p>` : ''}${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}${renderSyncDetails(preview)}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
   return panel('DATA → RCP_VEHICLES', `<button onclick="analyzeSync()">Analyser les changements</button>${summary}`, 'sync');
 }
 function renderHistory() {

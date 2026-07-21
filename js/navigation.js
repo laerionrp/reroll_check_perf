@@ -34,7 +34,7 @@ function renderAppNavigation() {
     if (container.querySelector('[data-app-navigation-item]')) return;
 
     const activePage = getActiveNavigationPage(container);
-    const navigationTail = container.querySelector('[data-navigation-tail]');
+    const navigationTail = container.querySelector('[data-navigation-tail], [data-tariff-selector]');
     const fragment = document.createDocumentFragment();
 
     RCP_NAV_ITEMS.forEach(item => {
