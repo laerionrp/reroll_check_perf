@@ -5,7 +5,8 @@ const errorBox = document.getElementById('error');
 const loginMessage = sessionStorage.getItem('garage_login_message');
 const LOGIN_TARGETS = {
   control: 'index.html',
-  inventory: 'garage.html'
+  inventory: 'garage.html',
+  settings: 'settings.html'
 };
 const requestedTarget = new URLSearchParams(window.location.search).get('target');
 const loginDestination = LOGIN_TARGETS[requestedTarget] || LOGIN_TARGETS.inventory;

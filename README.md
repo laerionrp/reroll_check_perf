@@ -1,5 +1,12 @@
 # Reroll Check Perf
 
+## v1.3.1 — calcul des performances
+
+Les nouveaux tarifs de performances utilisent deux plafonds distincts : d'abord
+le prix HT du palier, puis sa TVA. `js/performance-pricing.js` porte cette règle
+commune à Contrôle tarif et à l'Inventaire. Les achats historiques enregistrés
+restent inchangés.
+
 Application web de gestion de véhicules GTA RP.
 
 ## Fonctionnalités
