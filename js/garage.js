@@ -274,6 +274,7 @@ function parseStepsGarage(value) {
 
 function saveGarageCache() {
   requireCompatibleGarageData(data);
+  RcpTariff.resolve(data.tariffScope);
   localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(data));
   localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
   localStorage.setItem(GARAGE_CACHE_TOKEN_KEY, token);
@@ -656,6 +657,7 @@ async function loadGarage() {
         }
 
         data = parsedCache;
+        RcpTariff.resolve(data.tariffScope);
         renderGarage();
         cacheLoaded = true;
       } catch (error) {
@@ -668,7 +670,7 @@ async function loadGarage() {
 
     if (cacheLoaded) {
 
-      api('getGarageData', { tariffScope: RcpTariff.get() }, token)
+      api('getGarageData', { tariffScope: RcpTariff.getRequestScope() }, token)
         .then(freshData => {
           data = requireCompatibleGarageData(freshData);
           saveGarageCache();
@@ -689,7 +691,7 @@ async function loadGarage() {
     }
 
     data = requireCompatibleGarageData(
-      await api('getGarageData', { tariffScope: RcpTariff.get() }, token)
+      await api('getGarageData', { tariffScope: RcpTariff.getRequestScope() }, token)
     );
     saveGarageCache();
     renderGarage();

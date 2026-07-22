@@ -1475,6 +1475,20 @@ button {
 .settings-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
 .settings-grid article { display:flex; flex-direction:column; gap:6px; padding:14px; border:1px solid var(--border); border-radius:10px; background:rgba(0,0,0,.08); }
 .settings-grid article strong { font-size:22px; }
+.tariff-settings-form { display:grid; gap:16px; }
+.tariff-settings-card h3 { display:flex; align-items:baseline; gap:8px; margin:0 0 12px; }
+.tariff-settings-card h3 small { color:var(--muted); font-size:.72em; }
+.tariff-settings-card label { margin-top:4px; }
+.settings-percent-input { position:relative; }
+.settings-percent-input input { margin:0; padding-right:42px; }
+.settings-percent-input span { position:absolute; top:50%; right:14px; color:var(--muted); font-weight:600; transform:translateY(-50%); pointer-events:none; }
+.tariff-default-setting { max-width:420px; }
+.tariff-default-setting select { margin-bottom:6px; }
+.tariff-default-setting p,.settings-form-help { margin:0; color:var(--muted); font-size:.9rem; }
+.settings-save-status { display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:rgba(0,0,0,.08); }
+.settings-save-status.success { color:var(--success, #5ca878); }
+.settings-save-spinner { width:18px; height:18px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:settings-save-spin .8s linear infinite; }
+@keyframes settings-save-spin { to { transform:rotate(360deg); } }
 .settings-toolbar { display:flex; gap:10px; }
 .settings-table-wrap { overflow:auto; }
 .settings-table-wrap table { width:100%; border-collapse:collapse; }

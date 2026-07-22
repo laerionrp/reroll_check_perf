@@ -9,6 +9,8 @@ const SETTINGS_TABS = [
   ['sync', 'Synchronisation'], ['history', 'Historique']
 ];
 let settingsData = null;
+let tariffSaveState = null;
+let tariffSaveResult = null;
 let syncPreview = null;
 let syncAnalysisState = null;
 let syncApplyState = null;
@@ -28,6 +30,10 @@ function escapeSettings(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
 function formatPercent(value) { return new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value) || 0); }
+function formatPercentInput(value) {
+  const percent = (Number(value) || 0) * 100;
+  return String(Number(percent.toFixed(4))).replace('.', ',');
+}
 function setSettingsError(message) { settingsError.textContent = message || ''; }
 function currentSettingsTab() {
   const saved = localStorage.getItem(SETTINGS_TAB_KEY);
@@ -49,7 +55,113 @@ function toggleSettingsPanel(id) {
 }
 function renderTariffs() {
   if (!settingsData.initialized) return panel('Initialisation requise', '<p>Exécute <code>initializeRcpV132Sheets</code> une fois dans Apps Script.</p>', 'init');
-  return panel('Profils tarifaires', `<div class="settings-grid">${settingsData.tariffs.map(item => `<article><h3>${item.scope}</h3><p>TVA véhicule : <strong>${formatPercent(item.vehicleVat)}</strong></p><p>TVA customisations : <strong>${formatPercent(item.customizationVat)}</strong></p></article>`).join('')}</div><p>Zone par défaut : <strong>${escapeSettings(settingsData.defaultScope)}</strong></p>`, 'tariffs');
+  const saving = Boolean(tariffSaveState && tariffSaveState.running);
+  const status = saving
+    ? '<div class="settings-save-status saving" role="status"><span class="settings-save-spinner" aria-hidden="true"></span><strong>Enregistrement des profils tarifaires…</strong></div>'
+    : tariffSaveResult
+      ? `<div class="settings-save-status success" role="status"><strong>${tariffSaveResult.changed ? 'Profils tarifaires enregistrés avec succès.' : 'Aucune modification à enregistrer.'}</strong></div>`
+      : '';
+  const cards = settingsData.tariffs.map(item => {
+    const scope = escapeSettings(item.scope);
+    const scopeLabel = item.scope === 'LS' ? 'Los Santos' : 'Blaine County';
+    return `<article class="tariff-settings-card">
+      <h3>${escapeSettings(scopeLabel)} <small>${scope}</small></h3>
+      <label for="vehicleVat-${scope}">TVA véhicules</label>
+      <div class="settings-percent-input"><input id="vehicleVat-${scope}" inputmode="decimal" autocomplete="off" value="${escapeSettings(formatPercentInput(item.vehicleVat))}" ${saving ? 'disabled' : ''}><span>%</span></div>
+      <label for="customizationVat-${scope}">TVA customisations</label>
+      <div class="settings-percent-input"><input id="customizationVat-${scope}" inputmode="decimal" autocomplete="off" value="${escapeSettings(formatPercentInput(item.customizationVat))}" ${saving ? 'disabled' : ''}><span>%</span></div>
+    </article>`;
+  }).join('');
+
+  return panel('Profils tarifaires', `<form class="tariff-settings-form" onsubmit="saveTariffSettings(event)">
+    ${status}
+    <div class="settings-grid">${cards}</div>
+    <div class="tariff-default-setting">
+      <label for="defaultTariffScope">Zone utilisée par défaut</label>
+      <select id="defaultTariffScope" ${saving ? 'disabled' : ''}>${['LS', 'BC'].map(scope => `<option value="${scope}" ${scope === settingsData.defaultScope ? 'selected' : ''}>${scope === 'LS' ? 'Los Santos (LS)' : 'Blaine County (BC)'}</option>`).join('')}</select>
+      <p>Elle s’applique seulement lorsqu’aucun choix LS/BC n’est déjà mémorisé dans le navigateur.</p>
+    </div>
+    <p class="settings-form-help">Valeurs acceptées : de 0 à 100 %. Les dépenses déjà enregistrées ne sont jamais recalculées.</p>
+    <button type="submit" ${saving ? 'disabled' : ''}>${saving ? 'Enregistrement…' : 'Enregistrer les profils tarifaires'}</button>
+  </form>`, 'tariffs');
+}
+
+function parseTariffPercentInput(input, label) {
+  const rawValue = String(input.value || '').trim();
+
+  if (!rawValue) throw new Error(label + ' est obligatoire.');
+
+  const percent = Number(rawValue.replace(/\s/g, '').replace(',', '.'));
+
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    throw new Error(label + ' doit être compris entre 0 et 100 %.');
+  }
+
+  return Math.round(percent * 10000) / 1000000;
+}
+
+function clearTariffCaches() {
+  ['', 'LS', 'BC'].forEach(scope => {
+    const suffix = '_' + scope;
+    localStorage.removeItem('rcp_public_data_v1_3_2' + suffix);
+    localStorage.removeItem('rcp_public_data_time_v1_3_2' + suffix);
+    localStorage.removeItem('rcp_garage_data_v1_3_2' + suffix);
+    localStorage.removeItem('rcp_garage_data_time_v1_3_2' + suffix);
+    localStorage.removeItem('rcp_garage_data_token_v1_3_2' + suffix);
+  });
+}
+
+async function saveTariffSettings(event) {
+  event.preventDefault();
+  if (tariffSaveState && tariffSaveState.running) return;
+
+  let payload;
+
+  try {
+    payload = {
+      tariffs: settingsData.tariffs.map(item => ({
+        scope: item.scope,
+        vehicleVat: parseTariffPercentInput(
+          document.getElementById('vehicleVat-' + item.scope),
+          'TVA véhicules ' + item.scope
+        ),
+        customizationVat: parseTariffPercentInput(
+          document.getElementById('customizationVat-' + item.scope),
+          'TVA customisations ' + item.scope
+        )
+      })),
+      defaultScope: document.getElementById('defaultTariffScope').value,
+      expectedRevision: settingsData.tariffRevision
+    };
+  } catch (error) {
+    setSettingsError(error.message);
+    return;
+  }
+
+  setSettingsError('');
+  tariffSaveResult = null;
+  tariffSaveState = { running: true };
+  renderSettings();
+
+  try {
+    const result = await api(
+      'updateRcpTariffSettings',
+      payload,
+      settingsToken
+    );
+
+    settingsData.tariffs = result.tariffs;
+    settingsData.defaultScope = result.defaultScope;
+    settingsData.tariffRevision = result.tariffRevision;
+    tariffSaveResult = { changed: result.changed, savedAt: result.savedAt };
+    clearTariffCaches();
+    RcpTariff.resolve(result.defaultScope);
+  } catch (error) {
+    setSettingsError('Enregistrement impossible : ' + error.message);
+  } finally {
+    tariffSaveState = null;
+    renderSettings();
+  }
 }
 function renderPerformances() {
   const rows = settingsData.performanceRates || [];
@@ -134,7 +246,7 @@ function renderSettings() {
 }
 async function loadSettings() {
   if (!settingsToken) { window.location.href = 'login.html?target=settings'; return; }
-  try { setSettingsError(''); settingsData = await api('getRcpSettingsData', {}, settingsToken); renderSettings(); }
+  try { setSettingsError(''); settingsData = await api('getRcpSettingsData', {}, settingsToken); RcpTariff.resolve(settingsData.defaultScope); renderSettings(); }
   catch (error) { if (/Token|Session|Connexion indisponible/i.test(error.message)) { localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; return; } setSettingsError(error.message); }
 }
 function stopSyncAnalysisFeedback() {

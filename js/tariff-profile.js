@@ -1,9 +1,23 @@
 (function () {
   const STORAGE_KEY = 'rcp_tariff_scope_v1';
   const scopes = ['LS', 'BC'];
-  function get() {
+  let resolvedDefaultScope = '';
+  function storedScope() {
     const value = localStorage.getItem(STORAGE_KEY);
-    return scopes.includes(value) ? value : 'LS';
+    return scopes.includes(value) ? value : '';
+  }
+  function get() {
+    return storedScope() || resolvedDefaultScope;
+  }
+  function getRequestScope() {
+    return storedScope();
+  }
+  function resolve(scope) {
+    if (storedScope()) return;
+    const normalizedScope = String(scope || '').trim().toUpperCase();
+    if (!scopes.includes(normalizedScope)) return;
+    resolvedDefaultScope = normalizedScope;
+    render();
   }
   function set(value) {
     const scope = scopes.includes(value) ? value : 'LS';
@@ -12,9 +26,10 @@
     window.dispatchEvent(new CustomEvent('rcp:tariff-scope-change', { detail: { scope } }));
   }
   function render() {
+    const activeScope = get() || 'LS';
     document.querySelectorAll('[data-tariff-selector]').forEach(container => {
       container.querySelectorAll('button').forEach(button => {
-        const active = button.dataset.scope === get();
+        const active = button.dataset.scope === activeScope;
         button.classList.toggle('active', active);
         button.setAttribute('aria-pressed', String(active));
       });
@@ -36,6 +51,6 @@
     });
     render();
   }
-  window.RcpTariff = Object.freeze({ get, set, mount });
+  window.RcpTariff = Object.freeze({ get, getRequestScope, resolve, set, mount });
   mount();
 })();

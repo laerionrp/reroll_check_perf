@@ -128,6 +128,7 @@ function getVehiclePurchaseTotal(vehicle) {
 
 function savePublicCache() {
   requireCompatiblePublicData(appData);
+  RcpTariff.resolve(appData.tariffScope);
   localStorage.setItem(
     PUBLIC_CACHE_KEY,
     JSON.stringify(appData)
@@ -170,9 +171,10 @@ async function loadData() {
 
     if (cacheValid) {
       appData = cachedData;
+      RcpTariff.resolve(appData.tariffScope);
       renderVehicleList();
 
-      api('getPublicData', { tariffScope: RcpTariff.get() })
+      api('getPublicData', { tariffScope: RcpTariff.getRequestScope() })
         .then(freshData => {
           appData = requireCompatiblePublicData(freshData);
           savePublicCache();
@@ -184,7 +186,7 @@ async function loadData() {
     }
 
     appData = requireCompatiblePublicData(
-      await api('getPublicData', { tariffScope: RcpTariff.get() })
+      await api('getPublicData', { tariffScope: RcpTariff.getRequestScope() })
     );
     savePublicCache();
 
