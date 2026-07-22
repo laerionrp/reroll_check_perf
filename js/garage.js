@@ -611,9 +611,9 @@ function shouldShowPerfGarage(vehicle, perfName) {
   return allowedPerfs.includes(normalizeGarage(perfName));
 }
 
-function getPerfLabelGarage(perfName, index) {
+function getPerfLabelGarage(perfName, index, levels) {
   const key = normalizeGarage(perfName);
-  return perfLabelsGarage[key]?.[index] || ('niveau ' + (index + 1));
+  return levels?.[index]?.label || perfLabelsGarage[key]?.[index] || ('niveau ' + (index + 1));
 }
 
 function getCurrentPerfPrice(vehicle, perfName, index) {
@@ -1093,11 +1093,11 @@ function renderPerfsGarage(vehicle) {
   entries.forEach(([perfName, levels]) => {
     const current = Number(vehicle[perfName + '_level']) || 0;
 
-    html += `<div class="perf"><h4>${escapeHtml(perfName)}</h4>`;
+    html += `<div class="perf"><h4>${escapeHtml(levels?.[0]?.performance_label || perfName)}</h4>`;
 
     levels.forEach((level, index) => {
       const lvl = index + 1;
-      const label = getPerfLabelGarage(perfName, index);
+      const label = getPerfLabelGarage(perfName, index, levels);
       const checked = current >= lvl ? 'checked' : '';
       const canChange = lvl === current || lvl === current + 1;
       const disabled = canChange ? '' : 'disabled';

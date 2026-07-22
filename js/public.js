@@ -308,10 +308,11 @@ function renderSelectedVehicle() {
   calculateTotal();
 }
 
-function getPerfLabel(perfName, index) {
+function getPerfLabel(perfName, index, levels) {
   const key = normalize(perfName);
 
   return (
+    levels?.[index]?.label ||
     perfLabels[key]?.[index] ||
     ('niveau ' + (index + 1))
   );
@@ -383,7 +384,7 @@ function renderPerformances() {
 
     const title = document.createElement('h3');
 
-    title.textContent = perfName;
+    title.textContent = levels?.[0]?.performance_label || perfName;
     block.appendChild(title);
 
     const noneLabel =
@@ -435,7 +436,7 @@ function renderPerformances() {
             data-total="${cumulativeTotal}"
           >
 
-          ${getPerfLabel(perfName, index)}
+        ${getPerfLabel(perfName, index, levels)}
         </span>
 
         <span>${money(stepPrice)}</span>

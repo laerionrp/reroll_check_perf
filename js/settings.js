@@ -12,6 +12,9 @@ let settingsData = null;
 let tariffSaveState = null;
 let tariffSaveResult = null;
 let tariffDraft = null;
+const performanceSaveStates = {};
+const performanceSaveResults = {};
+const performanceDrafts = {};
 let syncPreview = null;
 let syncAnalysisState = null;
 let syncApplyState = null;
@@ -198,7 +201,21 @@ async function saveTariffSettings(event) {
     renderSettings();
   }
 }
-function renderPerformances() {
+function parsePerformanceCoefficientInput(input, label) {
+  const rawValue = String(input.value || '').trim();
+
+  if (!rawValue) throw new Error(label + ' est obligatoire.');
+
+  const percent = Number(rawValue.replace(/\s/g, '').replace(',', '.'));
+
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    throw new Error(label + ' doit être compris entre 0 et 100 %.');
+  }
+
+  return Math.round(percent * 10000) / 1000000;
+}
+
+function getPerformanceGroups() {
   const rows = settingsData.performanceRates || [];
   const groups = rows.reduce((result, item) => {
     const key = String(item.performance_key || '').toLowerCase();
@@ -208,20 +225,125 @@ function renderPerformances() {
   }, {});
   const availableKeys = PERFORMANCE_ORDER.filter(key => groups[key] && groups[key].length);
   Object.keys(groups).forEach(key => { if (!availableKeys.includes(key)) availableKeys.push(key); });
+  return { groups, availableKeys };
+}
+
+async function savePerformanceSettings(event, performanceKey) {
+  event.preventDefault();
+  if (performanceSaveStates[performanceKey]?.running) return;
+
+  const { groups } = getPerformanceGroups();
+  const levels = (groups[performanceKey] || []).slice().sort(
+    (a, b) => Number(a.display_order || a.level) - Number(b.display_order || b.level)
+  );
+  let draft;
+
+  try {
+    const performanceLabel = String(
+      document.getElementById('performance-label-' + performanceKey).value || ''
+    ).trim();
+
+    if (!performanceLabel) throw new Error('Le libellé de performance est obligatoire.');
+    if (performanceLabel.length > 80) throw new Error('Le libellé de performance doit contenir 80 caractères maximum.');
+
+    draft = {
+      performanceKey,
+      performanceLabel,
+      rows: levels.map(item => ({
+        level: Number(item.level),
+        levelLabel: String(
+          document.getElementById('performance-level-label-' + performanceKey + '-' + item.level).value || ''
+        ).trim(),
+        coefficient: parsePerformanceCoefficientInput(
+          document.getElementById('performance-coefficient-' + performanceKey + '-' + item.level),
+          'Coefficient niveau ' + item.level
+        )
+      }))
+    };
+
+    draft.rows.forEach(item => {
+      if (!item.levelLabel) throw new Error('Le libellé du niveau ' + item.level + ' est obligatoire.');
+      if (item.levelLabel.length > 120) throw new Error('Le libellé du niveau ' + item.level + ' doit contenir 120 caractères maximum.');
+    });
+
+    const expectedRevision = String(
+      settingsData.performanceRevisions?.[performanceKey] || ''
+    ).trim();
+
+    if (!expectedRevision) {
+      throw new Error('Version de la performance absente. Recharge la page.');
+    }
+
+    performanceDrafts[performanceKey] = draft;
+    performanceSaveResults[performanceKey] = null;
+    performanceSaveStates[performanceKey] = { running: true };
+    setSettingsError('');
+    renderSettings();
+
+    const result = await api(
+      'updateRcpPerformanceSettings',
+      { ...draft, expectedRevision },
+      settingsToken
+    );
+    const returnedRows = result.rows || [];
+
+    settingsData.performanceRates = settingsData.performanceRates.map(item => {
+      if (String(item.performance_key || '').toLowerCase() !== performanceKey) return item;
+      return returnedRows.find(row => Number(row.level) === Number(item.level)) || item;
+    });
+    settingsData.performanceRevisions[performanceKey] = result.performanceRevision;
+    performanceSaveResults[performanceKey] = { changed: result.changed, savedAt: result.savedAt };
+    delete performanceDrafts[performanceKey];
+    clearTariffCaches();
+  } catch (error) {
+    setSettingsError('Enregistrement impossible : ' + error.message);
+  } finally {
+    performanceSaveStates[performanceKey] = null;
+    renderSettings();
+  }
+}
+
+function renderPerformances() {
+  const { groups, availableKeys } = getPerformanceGroups();
   const savedKey = localStorage.getItem(SETTINGS_PERFORMANCE_KEY);
   const openKey = savedKey === '__none__' ? '' : (availableKeys.includes(savedKey) ? savedKey : availableKeys[0] || '');
 
   return `<div class="performance-settings-list">${availableKeys.map(key => {
     const levels = groups[key].slice().sort((a, b) => Number(a.display_order || a.level) - Number(b.display_order || b.level));
-    const label = levels[0].performance_label || key;
+    const sourceDraft = performanceDrafts[key];
+    const label = sourceDraft?.performanceLabel || levels[0].performance_label || key;
     const isOpen = key === openKey;
+    const saving = Boolean(performanceSaveStates[key]?.running);
+    const result = performanceSaveResults[key];
+    const draftRows = sourceDraft?.rows || levels.map(item => ({
+      level: Number(item.level),
+      levelLabel: item.level_label || '',
+      coefficient: Number(item.coefficient) || 0
+    }));
+    const rowByLevel = Object.fromEntries(draftRows.map(item => [Number(item.level), item]));
+    const status = saving
+      ? '<div class="settings-save-status saving" role="status"><span class="settings-save-spinner" aria-hidden="true"></span><strong>Enregistrement de la performance…</strong></div>'
+      : result
+        ? `<div class="settings-save-status success" role="status"><strong>${result.changed ? 'Performance enregistrée avec succès.' : 'Aucune modification à enregistrer.'}</strong></div>`
+        : '';
     return `<section class="card performance-settings-item ${isOpen ? '' : 'collapsed'}">
       <button type="button" class="performance-settings-toggle" aria-expanded="${isOpen}" onclick="togglePerformanceSettings('${escapeSettings(key)}', ${isOpen})">
         <span>${escapeSettings(label)} <small>· ${levels.length} niveau${levels.length > 1 ? 'x' : ''}</small></span>
         <span aria-hidden="true">${isOpen ? '▲' : '▼'}</span>
       </button>
       <div class="performance-settings-body">
-        <div class="settings-table-wrap"><table><thead><tr><th>Niveau</th><th>Libellé</th><th>Coefficient</th><th>Active</th></tr></thead><tbody>${levels.map(item => `<tr><td>${escapeSettings(item.level)}</td><td>${escapeSettings(item.level_label)}</td><td>${formatPercent(item.coefficient)}</td><td>${item.active ? 'Oui' : 'Non'}</td></tr>`).join('')}</tbody></table></div>
+        <form class="performance-settings-form" onsubmit="savePerformanceSettings(event, '${escapeSettings(key)}')">
+          ${status}
+          <label class="performance-title-field" for="performance-label-${escapeSettings(key)}">Libellé de la performance
+            <input id="performance-label-${escapeSettings(key)}" value="${escapeSettings(label)}" maxlength="80" ${saving ? 'disabled' : ''}>
+          </label>
+          <div class="settings-table-wrap"><table><thead><tr><th>Niveau</th><th>Libellé</th><th>Coefficient</th><th>Active</th></tr></thead><tbody>${levels.map(item => {
+            const draftRow = rowByLevel[Number(item.level)] || item;
+            return `<tr><td>${escapeSettings(item.level)}</td><td><input id="performance-level-label-${escapeSettings(key)}-${escapeSettings(item.level)}" value="${escapeSettings(draftRow.levelLabel ?? item.level_label)}" maxlength="120" ${saving ? 'disabled' : ''}></td><td><div class="settings-percent-input"><input id="performance-coefficient-${escapeSettings(key)}-${escapeSettings(item.level)}" inputmode="decimal" autocomplete="off" value="${escapeSettings(formatPercentInput(draftRow.coefficient ?? item.coefficient))}" ${saving ? 'disabled' : ''}><span>%</span></div></td><td>${item.active ? 'Oui' : 'Non'}</td></tr>`;
+          }).join('')}</tbody></table></div>
+          <p class="settings-form-help">Les niveaux, l’ordre et l’état actif restent structurels dans cette passe. Les achats déjà enregistrés ne sont jamais recalculés.</p>
+          <button type="submit" ${saving ? 'disabled' : ''}>${saving ? 'Enregistrement…' : 'Enregistrer cette performance'}</button>
+        </form>
       </div>
     </section>`;
   }).join('')}</div>`;
@@ -281,7 +403,7 @@ function renderSettings() {
 }
 async function loadSettings() {
   if (!settingsToken) { window.location.href = 'login.html?target=settings'; return; }
-  try { setSettingsError(''); settingsData = await api('getRcpSettingsData', {}, settingsToken); tariffDraft = null; RcpTariff.resolve(settingsData.defaultScope); renderSettings(); }
+  try { setSettingsError(''); settingsData = await api('getRcpSettingsData', {}, settingsToken); settingsData.performanceRevisions = settingsData.performanceRevisions || {}; tariffDraft = null; Object.keys(performanceDrafts).forEach(key => delete performanceDrafts[key]); RcpTariff.resolve(settingsData.defaultScope); renderSettings(); }
   catch (error) { if (/Token|Session|Connexion indisponible/i.test(error.message)) { localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; return; } setSettingsError(error.message); }
 }
 function stopSyncAnalysisFeedback() {

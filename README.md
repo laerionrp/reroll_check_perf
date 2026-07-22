@@ -73,13 +73,13 @@ ne font plus partie de l’architecture.
 - L’URL du Web App utilisée par le frontend se trouve dans
   `js/config.js`.
 
-## Choix de maintenance
+## Paramétrage des performances
 
-Les ordres et libellés des performances restent actuellement définis
-dans `js/public.js` et `js/garage.js`. Les deux pages sont autonomes et
-leurs libellés ne sont pas strictement identiques. Leur centralisation
-est donc reportée à une évolution dédiée, avec tests des calculs et de
-l’affichage.
+Les coefficients et libellés actifs sont lus depuis `RCP_PERFORMANCE_RATES`.
+La page Paramètres permet de modifier un bloc de performance à la fois ; les
+niveaux, leur ordre et leur état actif restent structurels. `js/public.js` et
+`js/garage.js` conservent uniquement leurs valeurs de secours pour rester
+lisibles avec une ancienne réponse API.
 
 ## Configuration privée
 

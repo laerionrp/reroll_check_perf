@@ -1500,6 +1500,11 @@ button {
 .performance-settings-item.collapsed { padding-bottom:0; }
 .performance-settings-item.collapsed .performance-settings-toggle { margin-bottom:0; }
 .performance-settings-item.collapsed .performance-settings-body { display:none; }
+.performance-settings-form { display:grid; gap:14px; }
+.performance-title-field { display:grid; gap:6px; max-width:520px; }
+.performance-settings-form table input { min-width:150px; margin:0; }
+.performance-settings-form table .settings-percent-input input { min-width:110px; }
+.performance-settings-form button { justify-self:start; }
 .sync-summary { grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); }
 .sync-progress { display:flex; flex-direction:column; gap:8px; margin:0 0 14px; padding:14px; border:1px solid var(--border); border-radius:10px; background:rgba(0,0,0,.08); }
 .sync-progress-track { height:8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.1); }
