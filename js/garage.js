@@ -1,11 +1,10 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_TARIFF_CACHE_SUFFIX = '_' + RcpTariff.get();
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_2' + GARAGE_TARIFF_CACHE_SUFFIX;
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_2' + GARAGE_TARIFF_CACHE_SUFFIX;
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_2' + GARAGE_TARIFF_CACHE_SUFFIX;
-const GARAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_2';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_2';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_2';
+const GARAGE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const perfLabelsGarage = {
   blindage: ['20%', '40%', '60%'],
@@ -284,6 +283,8 @@ function isCompatibleGarageData(candidate) {
   return Boolean(
     candidate &&
     candidate.apiVersion === CONFIG.VERSION &&
+    Array.isArray(candidate.tariffProfiles) &&
+    candidate.tariffProfiles.length >= 2 &&
     Array.isArray(candidate.vehicles) &&
     Array.isArray(candidate.catalog) &&
     candidate.catalog.every(vehicle =>
@@ -309,10 +310,62 @@ function requireCompatibleGarageData(candidate) {
   return candidate;
 }
 
+function applyGarageTariffScope(candidate, requestedScope) {
+  const scope = String(
+    requestedScope || candidate?.tariffScope || ''
+  ).trim().toUpperCase();
+  const profile = (candidate?.tariffProfiles || []).find(
+    item => String(item.scope || '').toUpperCase() === scope
+  );
+
+  if (!profile) return false;
+
+  candidate.tariffScope = profile.scope;
+  candidate.tvaVehicle = Number(profile.vehicleVat) || 0;
+  candidate.tvaPerf = Number(profile.customizationVat) || 0;
+  return true;
+}
+
+function readGarageCache() {
+  const cached = localStorage.getItem(GARAGE_CACHE_KEY);
+  const cachedToken = localStorage.getItem(GARAGE_CACHE_TOKEN_KEY);
+  const cachedTime = Number(localStorage.getItem(GARAGE_CACHE_TIME_KEY)) || 0;
+
+  if (
+    !cached ||
+    cachedToken !== token ||
+    Date.now() - cachedTime >= GARAGE_CACHE_DURATION
+  ) {
+    if (cached) clearGarageCache();
+    return null;
+  }
+
+  try {
+    const parsedCache = requireCompatibleGarageData(JSON.parse(cached));
+    const requestedScope = RcpTariff.getRequestScope() || parsedCache.tariffScope;
+
+    if (!applyGarageTariffScope(parsedCache, requestedScope)) {
+      throw new Error('Profil tarifaire absent des données mémorisées.');
+    }
+
+    RcpTariff.resolve(parsedCache.tariffScope);
+    return parsedCache;
+  } catch (error) {
+    clearGarageCache();
+    return null;
+  }
+}
+
 function clearGarageCache() {
   localStorage.removeItem(GARAGE_CACHE_KEY);
   localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
   localStorage.removeItem(GARAGE_CACHE_TOKEN_KEY);
+  ['LS', 'BC', ''].forEach(scope => {
+    const suffix = scope ? '_' + scope : '_';
+    localStorage.removeItem('rcp_garage_data_v1_3_2' + suffix);
+    localStorage.removeItem('rcp_garage_data_time_v1_3_2' + suffix);
+    localStorage.removeItem('rcp_garage_data_token_v1_3_2' + suffix);
+  });
 }
 
 function isGarageSessionError(error) {
@@ -638,55 +691,11 @@ async function loadGarage() {
   try {
     setError('');
 
-    let cacheLoaded = false;
+    const cachedData = readGarageCache();
 
-    const cached = localStorage.getItem(GARAGE_CACHE_KEY);
-    const cachedTime = Number(localStorage.getItem(GARAGE_CACHE_TIME_KEY)) || 0;
-    const cachedToken = localStorage.getItem(GARAGE_CACHE_TOKEN_KEY);
-    const cacheValid =
-      cached &&
-      cachedToken === token &&
-      Date.now() - cachedTime < GARAGE_CACHE_DURATION;
-
-    if (cacheValid) {
-      try {
-        const parsedCache = JSON.parse(cached);
-
-        if (!isCompatibleGarageData(parsedCache)) {
-          throw new Error('Cache incomplet');
-        }
-
-        data = parsedCache;
-        RcpTariff.resolve(data.tariffScope);
-        renderGarage();
-        cacheLoaded = true;
-      } catch (error) {
-        clearGarageCache();
-        data = null;
-      }
-    } else if (cached) {
-      clearGarageCache();
-    }
-
-    if (cacheLoaded) {
-
-      api('getGarageData', { tariffScope: RcpTariff.getRequestScope() }, token)
-        .then(freshData => {
-          data = requireCompatibleGarageData(freshData);
-          saveGarageCache();
-          renderGarage();
-        })
-        .catch(error => {
-          if (isGarageSessionError(error)) {
-            redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
-            return;
-          }
-
-          setError(
-            'Mise à jour impossible : affichage des dernières données enregistrées.'
-          );
-        });
-
+    if (cachedData) {
+      data = cachedData;
+      renderGarage();
       return;
     }
 
@@ -1288,7 +1297,33 @@ async function togglePerf(cardId, perfName, level, checked) {
   }
 }
 
-window.addEventListener('rcp:tariff-scope-change', () => window.location.reload());
+async function handleGarageTariffScopeChange() {
+  if (!data) return;
+
+  if (applyGarageTariffScope(data, RcpTariff.get())) {
+    saveGarageCache();
+    renderGarage();
+    return;
+  }
+
+  try {
+    setError('Mise à jour du profil tarifaire…');
+    data = requireCompatibleGarageData(
+      await api('getGarageData', { tariffScope: RcpTariff.getRequestScope() }, token)
+    );
+    saveGarageCache();
+    renderGarage();
+  } catch (error) {
+    if (isGarageSessionError(error)) {
+      redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
+      return;
+    }
+
+    setError('Impossible d’appliquer ce profil tarifaire : ' + error.message);
+  }
+}
+
+window.addEventListener('rcp:tariff-scope-change', handleGarageTariffScopeChange);
 
 function updateGarageExitForm(cardId) {
   const exitType = document.getElementById(`exitType-${cardId}`).value;

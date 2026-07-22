@@ -1,8 +1,13 @@
 let appData = null;
 let selectedVehicle = null;
 
-const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_2_' + RcpTariff.get();
-const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_2_' + RcpTariff.get();
+const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_2';
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_2';
+const PUBLIC_LEGACY_CACHE_KEYS = [
+  'rcp_public_data_v1_3_2_',
+  'rcp_public_data_v1_3_2_LS',
+  'rcp_public_data_v1_3_2_BC'
+];
 const PUBLIC_CACHE_DURATION = 24 * 60 * 60 * 1000;
 
 const perfLabels = {
@@ -85,6 +90,8 @@ function isCompatiblePublicData(candidate) {
     candidate &&
     candidate.apiVersion === CONFIG.VERSION &&
     Array.isArray(candidate.vehicles) &&
+    Array.isArray(candidate.tariffProfiles) &&
+    candidate.tariffProfiles.length >= 2 &&
     candidate.vehicles.every(vehicle =>
       typeof vehicle.is_job === 'boolean' &&
       Array.isArray(vehicle.public_allowed_perfs)
@@ -100,6 +107,49 @@ function requireCompatiblePublicData(candidate) {
   }
 
   return candidate;
+}
+
+function applyPublicTariffScope(candidate, requestedScope) {
+  const scope = String(
+    requestedScope || candidate?.tariffScope || ''
+  ).trim().toUpperCase();
+  const profile = (candidate?.tariffProfiles || []).find(
+    item => String(item.scope || '').toUpperCase() === scope
+  );
+
+  if (!profile) return false;
+
+  candidate.tariffScope = profile.scope;
+  candidate.tvaVehicle = Number(profile.vehicleVat) || 0;
+  candidate.tvaPerf = Number(profile.customizationVat) || 0;
+  return true;
+}
+
+function readPublicCache() {
+  const cacheKeys = [PUBLIC_CACHE_KEY, ...PUBLIC_LEGACY_CACHE_KEYS];
+
+  for (const cacheKey of cacheKeys) {
+    const raw = localStorage.getItem(cacheKey);
+    if (!raw) continue;
+
+    try {
+      const candidate = JSON.parse(raw);
+      if (!isCompatiblePublicData(candidate)) continue;
+
+      const timeKey = cacheKey === PUBLIC_CACHE_KEY
+        ? PUBLIC_CACHE_TIME_KEY
+        : cacheKey.replace('rcp_public_data_v1_3_2', 'rcp_public_data_time_v1_3_2');
+      const cachedTime = Number(localStorage.getItem(timeKey)) || 0;
+
+      if (Date.now() - cachedTime < PUBLIC_CACHE_DURATION) {
+        return candidate;
+      }
+    } catch (error) {
+      localStorage.removeItem(cacheKey);
+    }
+  }
+
+  return null;
 }
 
 function getVehicleTTC(vehicle) {
@@ -144,50 +194,25 @@ async function loadData() {
   try {
     clearError();
 
-    const cached = localStorage.getItem(
-      PUBLIC_CACHE_KEY
-    );
+    const cachedData = readPublicCache();
 
-    const cachedTime =
-      Number(
-        localStorage.getItem(
-          PUBLIC_CACHE_TIME_KEY
-        )
-      ) || 0;
-
-    let cachedData = null;
-
-    try {
-      cachedData = cached ? JSON.parse(cached) : null;
-    } catch (error) {
-      localStorage.removeItem(PUBLIC_CACHE_KEY);
-      localStorage.removeItem(PUBLIC_CACHE_TIME_KEY);
-    }
-
-    const cacheValid =
-      isCompatiblePublicData(cachedData) &&
-      Date.now() - cachedTime <
-        PUBLIC_CACHE_DURATION;
-
-    if (cacheValid) {
+    if (cachedData) {
       appData = cachedData;
+      const requestedScope = RcpTariff.getRequestScope() || appData.tariffScope;
+
+      if (!applyPublicTariffScope(appData, requestedScope)) {
+        throw new Error('Profil tarifaire absent des données mémorisées.');
+      }
+
       RcpTariff.resolve(appData.tariffScope);
       renderVehicleList();
-
-      api('getPublicData', { tariffScope: RcpTariff.getRequestScope() })
-        .then(freshData => {
-          appData = requireCompatiblePublicData(freshData);
-          savePublicCache();
-          renderVehicleList();
-        })
-        .catch(() => {});
-
       return;
     }
 
     appData = requireCompatiblePublicData(
       await api('getPublicData', { tariffScope: RcpTariff.getRequestScope() })
     );
+    applyPublicTariffScope(appData, appData.tariffScope);
     savePublicCache();
 
     if (
@@ -502,4 +527,17 @@ vehicleSelect.addEventListener(
 );
 
 loadData();
-window.addEventListener('rcp:tariff-scope-change', () => window.location.reload());
+window.addEventListener('rcp:tariff-scope-change', () => {
+  if (!appData) {
+    loadData();
+    return;
+  }
+
+  if (!applyPublicTariffScope(appData, RcpTariff.get())) {
+    loadData();
+    return;
+  }
+
+  clearError();
+  renderVehicleList();
+});

@@ -1,6 +1,6 @@
 # Reroll Check Perf
 
-## v1.3.1 — calcul des performances
+## v1.3.2 — profils tarifaires et chargement optimisé
 
 Les nouveaux tarifs de performances utilisent deux plafonds distincts : d'abord
 le prix HT du palier, puis sa TVA. `js/performance-pricing.js` porte cette règle
@@ -54,14 +54,18 @@ Le projet est séparé en trois parties :
    - `Code.gs` : repère documentaire, sans exécution.
 
 3. **Google Sheets**
-   - `DATA` : catalogue, TVA et performances ;
+   - `DATA` : source privée d'analyse et de synchronisation ;
+   - `RCP_VEHICLES`, `RCP_SETTINGS` et `RCP_PERFORMANCE_RATES` : données
+     publiques préparées et utilisées pour les consultations courantes ;
    - `GARAGE_CARDS` : cartes grises ;
    - `GARAGE_DB` : véhicules et dépenses ;
    - `SETTINGS` : réglages privés.
 
-Le navigateur charge le site depuis GitHub Pages. Les données sont
-ensuite demandées au Web App Apps Script, qui lit ou modifie Google
-Sheets. Le backend ne sert aucune page HTML : `doGet()` et `include()`
+Le navigateur charge le site depuis GitHub Pages. Les pages réutilisent leurs
+données mémorisées localement tant qu'elles restent compatibles et récentes ;
+elles ne relancent pas automatiquement une requête complète en arrière-plan à
+chaque ouverture. Le catalogue Paramètres est chargé uniquement à l'ouverture
+de son onglet. Le backend ne sert aucune page HTML : `doGet()` et `include()`
 ne font plus partie de l’architecture.
 
 ## Déploiement
@@ -94,4 +98,4 @@ cellules prévues restées vides, sans supprimer ni remplacer une valeur non vid
 
 ## Version
 
-**v1.2**
+**v1.3.2**

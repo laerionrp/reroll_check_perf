@@ -113,6 +113,12 @@ function parseTariffPercentInput(input, label) {
 }
 
 function clearTariffCaches() {
+  localStorage.removeItem('rcp_public_data_v1_3_2');
+  localStorage.removeItem('rcp_public_data_time_v1_3_2');
+  localStorage.removeItem('rcp_garage_data_v1_3_2');
+  localStorage.removeItem('rcp_garage_data_time_v1_3_2');
+  localStorage.removeItem('rcp_garage_data_token_v1_3_2');
+
   ['', 'LS', 'BC'].forEach(scope => {
     const suffix = '_' + scope;
     localStorage.removeItem('rcp_public_data_v1_3_2' + suffix);
@@ -481,6 +487,7 @@ async function applySync() {
     const result = await api('applyRcpVehicleSync', { sourceSignature: syncPreview.sourceSignature }, settingsToken);
     syncApplyResult = { ...result, duration: formatElapsed(Date.now() - syncApplyState.startedAt) };
     syncPreview = null;
+    clearTariffCaches();
     await loadSettings();
   } catch (error) { setSettingsError('Synchronisation impossible : ' + error.message); }
   finally { clearInterval(syncAnalysisTimer); syncAnalysisTimer = null; syncApplyState = null; renderSettings(); }
