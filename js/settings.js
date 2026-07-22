@@ -15,6 +15,8 @@ let tariffDraft = null;
 const performanceSaveStates = {};
 const performanceSaveResults = {};
 const performanceDrafts = {};
+let settingsCatalogueLoading = false;
+let settingsCatalogueRequest = null;
 let syncPreview = null;
 let syncAnalysisState = null;
 let syncApplyState = null;
@@ -43,7 +45,11 @@ function currentSettingsTab() {
   const saved = localStorage.getItem(SETTINGS_TAB_KEY);
   return SETTINGS_TABS.some(([id]) => id === saved) ? saved : 'tariffs';
 }
-function selectSettingsTab(tab) { localStorage.setItem(SETTINGS_TAB_KEY, tab); renderSettings(); }
+function selectSettingsTab(tab) {
+  localStorage.setItem(SETTINGS_TAB_KEY, tab);
+  renderSettings();
+  if (tab === 'catalogue') loadSettingsCatalogue();
+}
 function renderSettingsTabs() {
   const active = currentSettingsTab();
   document.getElementById('settingsTabs').innerHTML = SETTINGS_TABS.map(([id, label]) => `<button type="button" class="${id === active ? 'active' : ''}" onclick="selectSettingsTab('${id}')">${label}</button>`).join('');
@@ -354,6 +360,12 @@ function togglePerformanceSettings(key, isOpen) {
 }
 function renderCatalogue() {
   const vehicles = settingsData.vehicles || [];
+  if (settingsCatalogueLoading) {
+    return panel('Catalogue', '<p>Chargement du catalogue…</p>', 'catalogue');
+  }
+  if (!settingsData.catalogueLoaded) {
+    return panel('Catalogue', '<p>Ouvre cet onglet pour charger le catalogue.</p>', 'catalogue');
+  }
   return panel('Catalogue', `<div class="settings-toolbar"><input id="catalogueSearch" placeholder="Rechercher" oninput="filterCatalogue()"><select id="catalogueStatus" onchange="filterCatalogue()"><option value="all">Tous</option><option value="active">Actifs</option><option value="retired">Retirés</option></select></div><p><strong>${vehicles.length}</strong> véhicules</p><div class="settings-table-wrap"><table id="catalogueTable"><thead><tr><th>Nom</th><th>Prix</th><th>Catégorie</th><th>Dealership</th><th>Statut</th></tr></thead><tbody>${vehicles.map(item => `<tr data-search="${escapeSettings((item.name + ' ' + item.category + ' ' + item.dealership_id).toLowerCase())}" data-status="${escapeSettings(item.catalogue_status)}"><td>${escapeSettings(item.name)}</td><td>${escapeSettings(item.price)} $</td><td>${escapeSettings(item.category)}</td><td>${escapeSettings(item.dealership_id)}</td><td>${escapeSettings(item.catalogue_status)}</td></tr>`).join('')}</tbody></table></div>`, 'catalogue');
 }
 function filterCatalogue() {
@@ -403,8 +415,43 @@ function renderSettings() {
 }
 async function loadSettings() {
   if (!settingsToken) { window.location.href = 'login.html?target=settings'; return; }
-  try { setSettingsError(''); settingsData = await api('getRcpSettingsData', {}, settingsToken); settingsData.performanceRevisions = settingsData.performanceRevisions || {}; tariffDraft = null; Object.keys(performanceDrafts).forEach(key => delete performanceDrafts[key]); RcpTariff.resolve(settingsData.defaultScope); renderSettings(); }
+  try {
+    setSettingsError('');
+    settingsCatalogueLoading = false;
+    settingsCatalogueRequest = null;
+    settingsData = await api('getRcpSettingsData', { includeCatalogue: false }, settingsToken);
+    settingsData.performanceRevisions = settingsData.performanceRevisions || {};
+    settingsData.catalogueLoaded = settingsData.catalogueLoaded === true;
+    tariffDraft = null;
+    Object.keys(performanceDrafts).forEach(key => delete performanceDrafts[key]);
+    RcpTariff.resolve(settingsData.defaultScope);
+    renderSettings();
+    if (currentSettingsTab() === 'catalogue') loadSettingsCatalogue();
+  }
   catch (error) { if (/Token|Session|Connexion indisponible/i.test(error.message)) { localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; return; } setSettingsError(error.message); }
+}
+
+async function loadSettingsCatalogue() {
+  if (!settingsData || settingsData.catalogueLoaded || settingsCatalogueLoading) return;
+  if (settingsCatalogueRequest) return settingsCatalogueRequest;
+
+  settingsCatalogueLoading = true;
+  renderSettings();
+  settingsCatalogueRequest = api('getRcpSettingsCatalogue', {}, settingsToken)
+    .then(result => {
+      settingsData.vehicles = result.vehicles || [];
+      settingsData.catalogueLoaded = result.catalogueLoaded === true;
+    })
+    .catch(error => {
+      setSettingsError('Chargement du catalogue impossible : ' + error.message);
+    })
+    .finally(() => {
+      settingsCatalogueLoading = false;
+      settingsCatalogueRequest = null;
+      renderSettings();
+    });
+
+  return settingsCatalogueRequest;
 }
 function stopSyncAnalysisFeedback() {
   clearInterval(syncAnalysisTimer); clearInterval(syncMessageTimer);
