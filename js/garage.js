@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_2';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_2';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_2';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_3';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_3';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_3';
 const GARAGE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const perfLabelsGarage = {
@@ -303,7 +303,7 @@ function isCompatibleGarageData(candidate) {
 function requireCompatibleGarageData(candidate) {
   if (!isCompatibleGarageData(candidate)) {
     throw new Error(
-      'Version de l’API Inventaire incompatible. Déploie le backend v1.2 consolidé.'
+      'Version de l’API Inventaire incompatible. Déploie le backend v1.3.3.'
     );
   }
 
@@ -333,8 +333,7 @@ function readGarageCache() {
 
   if (
     !cached ||
-    cachedToken !== token ||
-    Date.now() - cachedTime >= GARAGE_CACHE_DURATION
+    cachedToken !== token
   ) {
     if (cached) clearGarageCache();
     return null;
@@ -349,7 +348,10 @@ function readGarageCache() {
     }
 
     RcpTariff.resolve(parsedCache.tariffScope);
-    return parsedCache;
+    return {
+      data: parsedCache,
+      fresh: Date.now() - cachedTime < GARAGE_CACHE_DURATION
+    };
   } catch (error) {
     clearGarageCache();
     return null;
@@ -360,11 +362,13 @@ function clearGarageCache() {
   localStorage.removeItem(GARAGE_CACHE_KEY);
   localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
   localStorage.removeItem(GARAGE_CACHE_TOKEN_KEY);
-  ['LS', 'BC', ''].forEach(scope => {
-    const suffix = scope ? '_' + scope : '_';
-    localStorage.removeItem('rcp_garage_data_v1_3_2' + suffix);
-    localStorage.removeItem('rcp_garage_data_time_v1_3_2' + suffix);
-    localStorage.removeItem('rcp_garage_data_token_v1_3_2' + suffix);
+  ['v1_3_2', 'v1_3_3'].forEach(version => {
+    ['', 'LS', 'BC'].forEach(scope => {
+      const suffix = scope ? '_' + scope : '';
+      localStorage.removeItem('rcp_garage_data_' + version + suffix);
+      localStorage.removeItem('rcp_garage_data_time_' + version + suffix);
+      localStorage.removeItem('rcp_garage_data_token_' + version + suffix);
+    });
   });
 }
 
@@ -691,19 +695,16 @@ async function loadGarage() {
   try {
     setError('');
 
-    const cachedData = readGarageCache();
+    const cachedEntry = readGarageCache();
 
-    if (cachedData) {
-      data = cachedData;
+    if (cachedEntry) {
+      data = cachedEntry.data;
       renderGarage();
+      if (!cachedEntry.fresh) void refreshGarageCacheIfNeeded(cachedEntry.data);
       return;
     }
 
-    data = requireCompatibleGarageData(
-      await api('getGarageData', { tariffScope: RcpTariff.getRequestScope() }, token)
-    );
-    saveGarageCache();
-    renderGarage();
+    await loadGarageDataFromServer();
 
   } catch (error) {
     if (isGarageSessionError(error)) {
@@ -712,6 +713,32 @@ async function loadGarage() {
     }
 
     setError(error.message);
+  }
+}
+
+async function loadGarageDataFromServer() {
+  data = requireCompatibleGarageData(
+    await api('getGarageData', { tariffScope: RcpTariff.getRequestScope() }, token)
+  );
+  saveGarageCache();
+  renderGarage();
+}
+
+async function refreshGarageCacheIfNeeded(cachedData) {
+  try {
+    const revisionState = await RcpRevisions.fetch();
+
+    if (RcpRevisions.matches(cachedData.revisionState, revisionState, true)) {
+      localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
+      return;
+    }
+
+    await loadGarageDataFromServer();
+  } catch (error) {
+    if (isGarageSessionError(error)) {
+      redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
+    }
+    // L’inventaire mémorisé reste affiché si la vérification légère échoue.
   }
 }
 

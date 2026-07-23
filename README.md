@@ -1,6 +1,6 @@
 # Reroll Check Perf
 
-## v1.3.2 — profils tarifaires et chargement optimisé
+## v1.3.3 — cache, révisions et informations légales
 
 Les nouveaux tarifs de performances utilisent deux plafonds distincts : d'abord
 le prix HT du palier, puis sa TVA. `js/performance-pricing.js` porte cette règle
@@ -63,10 +63,14 @@ Le projet est séparé en trois parties :
 
 Le navigateur charge le site depuis GitHub Pages. Les pages réutilisent leurs
 données mémorisées localement tant qu'elles restent compatibles et récentes ;
-elles ne relancent pas automatiquement une requête complète en arrière-plan à
-chaque ouverture. Le catalogue Paramètres est chargé uniquement à l'ouverture
-de son onglet. Le backend ne sert aucune page HTML : `doGet()` et `include()`
+elles affichent immédiatement un cache périmé puis effectuent uniquement une
+vérification légère des révisions avant de demander de gros volumes. Le
+catalogue Paramètres est chargé uniquement à l'ouverture de son onglet et est
+lui-même mémorisé. Le backend ne sert aucune page HTML : `doGet()` et `include()`
 ne font plus partie de l’architecture.
+
+Une page `mentions-legales.html` est accessible discrètement depuis le texte
+de version affiché en bas des pages.
 
 ## Déploiement
 
@@ -91,11 +95,9 @@ Le mot de passe de l’inventaire est stocké uniquement dans la propriété
 de script Apps Script `RCP_LOGIN_PASSWORD`. Il ne doit jamais être ajouté
 au dépôt Git.
 
-Après le premier déploiement de cette consolidation, exécuter une seule
-fois `migrateRcpV12Schema()` depuis l’éditeur Apps Script. La migration est
-idempotente : elle ajoute les colonnes manquantes et complète uniquement les
-cellules prévues restées vides, sans supprimer ni remplacer une valeur non vide.
+Pour l’instance déjà initialisée en v1.3.2, aucune initialisation ni migration
+n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.2**
+**v1.3.3**

@@ -3,6 +3,14 @@ const settingsError = document.getElementById('settingsError');
 const settingsContent = document.getElementById('settingsContent');
 const SETTINGS_TAB_KEY = 'rcp_settings_active_tab_v1';
 const SETTINGS_PERFORMANCE_KEY = 'rcp_settings_open_performance_v1';
+const SETTINGS_CACHE_KEY = 'rcp_settings_data_v1_3_3';
+const SETTINGS_CACHE_TIME_KEY = 'rcp_settings_data_time_v1_3_3';
+const SETTINGS_CACHE_TOKEN_KEY = 'rcp_settings_data_token_v1_3_3';
+const SETTINGS_CATALOGUE_CACHE_KEY = 'rcp_settings_catalogue_v1_3_3';
+const SETTINGS_CATALOGUE_CACHE_TIME_KEY = 'rcp_settings_catalogue_time_v1_3_3';
+const SETTINGS_CATALOGUE_CACHE_TOKEN_KEY = 'rcp_settings_catalogue_token_v1_3_3';
+const SETTINGS_CACHE_DURATION = 10 * 60 * 1000;
+const SETTINGS_CATALOGUE_CACHE_DURATION = 30 * 60 * 1000;
 const PERFORMANCE_ORDER = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
 const SETTINGS_TABS = [
   ['tariffs', 'Tarifs'], ['performances', 'Performances'], ['catalogue', 'Catalogue'],
@@ -112,21 +120,116 @@ function parseTariffPercentInput(input, label) {
   return Math.round(percent * 10000) / 1000000;
 }
 
-function clearTariffCaches() {
-  localStorage.removeItem('rcp_public_data_v1_3_2');
-  localStorage.removeItem('rcp_public_data_time_v1_3_2');
-  localStorage.removeItem('rcp_garage_data_v1_3_2');
-  localStorage.removeItem('rcp_garage_data_time_v1_3_2');
-  localStorage.removeItem('rcp_garage_data_token_v1_3_2');
+function isCompatibleSettingsData(candidate) {
+  return Boolean(
+    candidate &&
+    candidate.apiVersion === CONFIG.VERSION &&
+    candidate.initialized === true &&
+    Array.isArray(candidate.tariffs) &&
+    Array.isArray(candidate.performanceRates) &&
+    candidate.revisionState &&
+    candidate.tariffRevision
+  );
+}
 
-  ['', 'LS', 'BC'].forEach(scope => {
-    const suffix = '_' + scope;
-    localStorage.removeItem('rcp_public_data_v1_3_2' + suffix);
-    localStorage.removeItem('rcp_public_data_time_v1_3_2' + suffix);
-    localStorage.removeItem('rcp_garage_data_v1_3_2' + suffix);
-    localStorage.removeItem('rcp_garage_data_time_v1_3_2' + suffix);
-    localStorage.removeItem('rcp_garage_data_token_v1_3_2' + suffix);
+function resetSettingsDrafts() {
+  tariffDraft = null;
+  Object.keys(performanceDrafts).forEach(key => delete performanceDrafts[key]);
+}
+
+function saveSettingsCache() {
+  if (!isCompatibleSettingsData(settingsData)) return;
+
+  const snapshot = Object.assign({}, settingsData, {
+    vehicles: [],
+    catalogueLoaded: false
   });
+
+  localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(snapshot));
+  localStorage.setItem(SETTINGS_CACHE_TIME_KEY, String(Date.now()));
+  localStorage.setItem(SETTINGS_CACHE_TOKEN_KEY, settingsToken);
+}
+
+function readSettingsCache() {
+  const raw = localStorage.getItem(SETTINGS_CACHE_KEY);
+  const cachedToken = localStorage.getItem(SETTINGS_CACHE_TOKEN_KEY);
+
+  if (!raw || cachedToken !== settingsToken) return null;
+
+  try {
+    const candidate = JSON.parse(raw);
+
+    if (!isCompatibleSettingsData(candidate)) throw new Error('Cache Paramètres incompatible');
+
+    const cachedTime = Number(localStorage.getItem(SETTINGS_CACHE_TIME_KEY)) || 0;
+    return {
+      data: candidate,
+      fresh: Date.now() - cachedTime < SETTINGS_CACHE_DURATION
+    };
+  } catch (_) {
+    clearSettingsCacheOnly();
+    return null;
+  }
+}
+
+function saveSettingsCatalogueCache(result) {
+  if (!result || result.apiVersion !== CONFIG.VERSION || !Array.isArray(result.vehicles)) return;
+
+  localStorage.setItem(SETTINGS_CATALOGUE_CACHE_KEY, JSON.stringify(result));
+  localStorage.setItem(SETTINGS_CATALOGUE_CACHE_TIME_KEY, String(Date.now()));
+  localStorage.setItem(SETTINGS_CATALOGUE_CACHE_TOKEN_KEY, settingsToken);
+}
+
+function readSettingsCatalogueCache() {
+  const raw = localStorage.getItem(SETTINGS_CATALOGUE_CACHE_KEY);
+  const cachedToken = localStorage.getItem(SETTINGS_CATALOGUE_CACHE_TOKEN_KEY);
+
+  if (!raw || cachedToken !== settingsToken) return null;
+
+  try {
+    const candidate = JSON.parse(raw);
+    if (candidate.apiVersion !== CONFIG.VERSION || !Array.isArray(candidate.vehicles)) {
+      throw new Error('Cache catalogue incompatible');
+    }
+
+    const cachedTime = Number(localStorage.getItem(SETTINGS_CATALOGUE_CACHE_TIME_KEY)) || 0;
+    return {
+      data: candidate,
+      fresh: Date.now() - cachedTime < SETTINGS_CATALOGUE_CACHE_DURATION
+    };
+  } catch (_) {
+    clearSettingsCatalogueCacheOnly();
+    return null;
+  }
+}
+
+function clearSettingsCacheOnly() {
+  localStorage.removeItem(SETTINGS_CACHE_KEY);
+  localStorage.removeItem(SETTINGS_CACHE_TIME_KEY);
+  localStorage.removeItem(SETTINGS_CACHE_TOKEN_KEY);
+}
+
+function clearSettingsCatalogueCacheOnly() {
+  localStorage.removeItem(SETTINGS_CATALOGUE_CACHE_KEY);
+  localStorage.removeItem(SETTINGS_CATALOGUE_CACHE_TIME_KEY);
+  localStorage.removeItem(SETTINGS_CATALOGUE_CACHE_TOKEN_KEY);
+}
+
+function clearTariffCaches() {
+  ['v1_3_2', 'v1_3_3'].forEach(version => {
+    localStorage.removeItem('rcp_public_data_' + version);
+    localStorage.removeItem('rcp_public_data_time_' + version);
+    ['', 'LS', 'BC'].forEach(scope => {
+      const suffix = scope ? '_' + scope : '';
+      localStorage.removeItem('rcp_public_data_' + version + suffix);
+      localStorage.removeItem('rcp_public_data_time_' + version + suffix);
+      localStorage.removeItem('rcp_garage_data_' + version + suffix);
+      localStorage.removeItem('rcp_garage_data_time_' + version + suffix);
+      localStorage.removeItem('rcp_garage_data_token_' + version + suffix);
+    });
+  });
+  clearSettingsCacheOnly();
+  clearSettingsCatalogueCacheOnly();
 }
 
 async function calculateTariffRevision(tariffs, defaultScope) {
@@ -202,6 +305,7 @@ async function saveTariffSettings(event) {
     settingsData.tariffs = result.tariffs;
     settingsData.defaultScope = result.defaultScope;
     settingsData.tariffRevision = result.tariffRevision;
+    settingsData.revisionState = result.revisionState || settingsData.revisionState;
     tariffSaveResult = { changed: result.changed, savedAt: result.savedAt };
     tariffDraft = null;
     clearTariffCaches();
@@ -304,6 +408,7 @@ async function savePerformanceSettings(event, performanceKey) {
       return returnedRows.find(row => Number(row.level) === Number(item.level)) || item;
     });
     settingsData.performanceRevisions[performanceKey] = result.performanceRevision;
+    settingsData.revisionState = result.revisionState || settingsData.revisionState;
     performanceSaveResults[performanceKey] = { changed: result.changed, savedAt: result.savedAt };
     delete performanceDrafts[performanceKey];
     clearTariffCaches();
@@ -419,35 +524,119 @@ function renderSettings() {
   renderSettingsTabs(); if (!settingsData) return;
   const tab = currentSettingsTab(); settingsContent.innerHTML = ({ tariffs: renderTariffs, performances: renderPerformances, catalogue: renderCatalogue, sync: renderSync, history: renderHistory })[tab]();
 }
+async function loadSettingsFromServer() {
+  settingsCatalogueLoading = false;
+  settingsCatalogueRequest = null;
+  settingsData = await api('getRcpSettingsData', { includeCatalogue: false }, settingsToken);
+  settingsData.performanceRevisions = settingsData.performanceRevisions || {};
+  settingsData.catalogueLoaded = false;
+  resetSettingsDrafts();
+  saveSettingsCache();
+  RcpTariff.resolve(settingsData.defaultScope);
+  renderSettings();
+  if (currentSettingsTab() === 'catalogue') void loadSettingsCatalogue();
+}
+
+async function refreshSettingsCacheIfNeeded(cachedData) {
+  try {
+    const revisionState = await RcpRevisions.fetch();
+
+    if (RcpRevisions.matches(cachedData.revisionState, revisionState, false)) {
+      settingsData.revisionState = revisionState;
+      settingsData.tariffRevision = revisionState.tariffRevision;
+      localStorage.setItem(SETTINGS_CACHE_TIME_KEY, String(Date.now()));
+      return;
+    }
+
+    await loadSettingsFromServer();
+  } catch (error) {
+    if (/Token|Session|Connexion indisponible/i.test(error.message)) {
+      localStorage.removeItem('garage_token');
+      window.location.href = 'login.html?target=settings';
+    }
+    // Le cache affiché reste disponible si la vérification légère échoue.
+  }
+}
+
 async function loadSettings() {
   if (!settingsToken) { window.location.href = 'login.html?target=settings'; return; }
   try {
     setSettingsError('');
-    settingsCatalogueLoading = false;
-    settingsCatalogueRequest = null;
-    settingsData = await api('getRcpSettingsData', { includeCatalogue: false }, settingsToken);
-    settingsData.performanceRevisions = settingsData.performanceRevisions || {};
-    settingsData.catalogueLoaded = settingsData.catalogueLoaded === true;
-    tariffDraft = null;
-    Object.keys(performanceDrafts).forEach(key => delete performanceDrafts[key]);
-    RcpTariff.resolve(settingsData.defaultScope);
-    renderSettings();
-    if (currentSettingsTab() === 'catalogue') loadSettingsCatalogue();
+    const cachedEntry = readSettingsCache();
+
+    if (cachedEntry) {
+      settingsData = cachedEntry.data;
+      settingsData.performanceRevisions = settingsData.performanceRevisions || {};
+      settingsData.catalogueLoaded = false;
+      resetSettingsDrafts();
+      RcpTariff.resolve(settingsData.defaultScope);
+      renderSettings();
+      if (!cachedEntry.fresh) void refreshSettingsCacheIfNeeded(cachedEntry.data);
+      if (currentSettingsTab() === 'catalogue') void loadSettingsCatalogue();
+      return;
+    }
+
+    await loadSettingsFromServer();
   }
-  catch (error) { if (/Token|Session|Connexion indisponible/i.test(error.message)) { localStorage.removeItem('garage_token'); window.location.href = 'login.html?target=settings'; return; } setSettingsError(error.message); }
+  catch (error) {
+    if (/Token|Session|Connexion indisponible/i.test(error.message)) {
+      localStorage.removeItem('garage_token');
+      window.location.href = 'login.html?target=settings';
+      return;
+    }
+    setSettingsError(error.message);
+  }
+}
+
+async function loadSettingsCatalogueFromServer() {
+  const result = await api('getRcpSettingsCatalogue', {}, settingsToken);
+  settingsData.vehicles = result.vehicles || [];
+  settingsData.catalogueLoaded = result.catalogueLoaded === true;
+  settingsData.revisionState = result.revisionState || settingsData.revisionState;
+  saveSettingsCatalogueCache(result);
+  renderSettings();
+}
+
+async function refreshSettingsCatalogueCacheIfNeeded(cachedData) {
+  try {
+    const revisionState = await RcpRevisions.fetch();
+
+    if (RcpRevisions.matches(cachedData.revisionState, revisionState, false)) {
+      localStorage.setItem(SETTINGS_CATALOGUE_CACHE_TIME_KEY, String(Date.now()));
+      return;
+    }
+
+    await loadSettingsCatalogueFromServer();
+  } catch (error) {
+    if (/Token|Session|Connexion indisponible/i.test(error.message)) {
+      localStorage.removeItem('garage_token');
+      window.location.href = 'login.html?target=settings';
+    }
+    // Le catalogue mémorisé reste affiché si la vérification légère échoue.
+  }
 }
 
 async function loadSettingsCatalogue() {
   if (!settingsData || settingsData.catalogueLoaded || settingsCatalogueLoading) return;
   if (settingsCatalogueRequest) return settingsCatalogueRequest;
 
+  const cachedEntry = readSettingsCatalogueCache();
+
+  if (cachedEntry && RcpRevisions.matches(
+    cachedEntry.data.revisionState,
+    settingsData.revisionState,
+    false
+  )) {
+    settingsData.vehicles = cachedEntry.data.vehicles;
+    settingsData.catalogueLoaded = true;
+    renderSettings();
+    if (!cachedEntry.fresh) void refreshSettingsCatalogueCacheIfNeeded(cachedEntry.data);
+    return;
+  }
+
   settingsCatalogueLoading = true;
   renderSettings();
-  settingsCatalogueRequest = api('getRcpSettingsCatalogue', {}, settingsToken)
-    .then(result => {
-      settingsData.vehicles = result.vehicles || [];
-      settingsData.catalogueLoaded = result.catalogueLoaded === true;
-    })
+  settingsCatalogueRequest = loadSettingsCatalogueFromServer()
     .catch(error => {
       setSettingsError('Chargement du catalogue impossible : ' + error.message);
     })

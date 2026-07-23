@@ -1,9 +1,10 @@
 let appData = null;
 let selectedVehicle = null;
 
-const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_2';
-const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_2';
+const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_3';
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_3';
 const PUBLIC_LEGACY_CACHE_KEYS = [
+  'rcp_public_data_v1_3_2',
   'rcp_public_data_v1_3_2_',
   'rcp_public_data_v1_3_2_LS',
   'rcp_public_data_v1_3_2_BC'
@@ -102,7 +103,7 @@ function isCompatiblePublicData(candidate) {
 function requireCompatiblePublicData(candidate) {
   if (!isCompatiblePublicData(candidate)) {
     throw new Error(
-      'Version de l’API incompatible. Déploie le backend v1.2 consolidé.'
+      'Version de l’API incompatible. Déploie le backend v1.3.3.'
     );
   }
 
@@ -142,8 +143,10 @@ function readPublicCache() {
       const cachedTime = Number(localStorage.getItem(timeKey)) || 0;
 
       if (Date.now() - cachedTime < PUBLIC_CACHE_DURATION) {
-        return candidate;
+        return { data: candidate, fresh: true };
       }
+
+      return { data: candidate, fresh: false };
     } catch (error) {
       localStorage.removeItem(cacheKey);
     }
@@ -190,43 +193,61 @@ function savePublicCache() {
   );
 }
 
+function applyCachedPublicData(candidate) {
+  appData = candidate;
+  const requestedScope = RcpTariff.getRequestScope() || appData.tariffScope;
+
+  if (!applyPublicTariffScope(appData, requestedScope)) {
+    throw new Error('Profil tarifaire absent des données mémorisées.');
+  }
+
+  RcpTariff.resolve(appData.tariffScope);
+  renderVehicleList();
+}
+
+async function loadPublicDataFromServer() {
+  appData = requireCompatiblePublicData(
+    await api('getPublicData', { tariffScope: RcpTariff.getRequestScope() })
+  );
+  applyPublicTariffScope(appData, appData.tariffScope);
+  savePublicCache();
+
+  if (!appData.vehicles || appData.vehicles.length === 0) {
+    showError('Aucun véhicule trouvé. Vérifie les tables RCP.');
+    return;
+  }
+
+  renderVehicleList();
+}
+
+async function refreshPublicCacheIfNeeded(cachedData) {
+  try {
+    const revisionState = await RcpRevisions.fetch();
+
+    if (RcpRevisions.matches(cachedData.revisionState, revisionState, false)) {
+      localStorage.setItem(PUBLIC_CACHE_TIME_KEY, String(Date.now()));
+      return;
+    }
+
+    await loadPublicDataFromServer();
+  } catch (_) {
+    // Les données mémorisées restent utilisables si la vérification légère échoue.
+  }
+}
+
 async function loadData() {
   try {
     clearError();
 
-    const cachedData = readPublicCache();
+    const cachedEntry = readPublicCache();
 
-    if (cachedData) {
-      appData = cachedData;
-      const requestedScope = RcpTariff.getRequestScope() || appData.tariffScope;
-
-      if (!applyPublicTariffScope(appData, requestedScope)) {
-        throw new Error('Profil tarifaire absent des données mémorisées.');
-      }
-
-      RcpTariff.resolve(appData.tariffScope);
-      renderVehicleList();
+    if (cachedEntry) {
+      applyCachedPublicData(cachedEntry.data);
+      if (!cachedEntry.fresh) void refreshPublicCacheIfNeeded(cachedEntry.data);
       return;
     }
 
-    appData = requireCompatiblePublicData(
-      await api('getPublicData', { tariffScope: RcpTariff.getRequestScope() })
-    );
-    applyPublicTariffScope(appData, appData.tariffScope);
-    savePublicCache();
-
-    if (
-      !appData.vehicles ||
-      appData.vehicles.length === 0
-    ) {
-      showError(
-        'Aucun véhicule trouvé. Vérifie la feuille DATA.'
-      );
-
-      return;
-    }
-
-    renderVehicleList();
+    await loadPublicDataFromServer();
 
   } catch (error) {
     showError('Erreur API : ' + error.message);
