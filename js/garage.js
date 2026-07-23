@@ -32,6 +32,9 @@ const GARAGE_PANEL_DEFAULT_STATES = new Map([
 ]);
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
+const pendingGaragePerformanceCounts = new Map();
+let garagePerformanceMutationChain = Promise.resolve();
+let garagePerformanceQueueGeneration = 0;
 let garageVehicleFilter = 'active';
 let garageMasonryFrame = 0;
 let garageViewportRestoreFrame = 0;
@@ -691,6 +694,171 @@ function getCurrentPerfPrice(vehicle, perfName, index) {
   );
 }
 
+function findGarageVehicle(cardId) {
+  return data?.vehicles?.find(
+    vehicle => Number(vehicle.card_id) === Number(cardId)
+  ) || null;
+}
+
+function applyOptimisticPerformanceChange(
+  vehicle,
+  perfName,
+  level,
+  checked
+) {
+  const currentLevel = Math.max(
+    0,
+    Number(vehicle[perfName + '_level']) || 0
+  );
+  const targetLevel = checked ? Number(level) : Number(level) - 1;
+  const steps = parseStepsGarage(vehicle[perfName + '_steps']);
+
+  if (!Number.isInteger(targetLevel) || targetLevel < 0) return;
+
+  let priceDelta = 0;
+
+  if (checked) {
+    for (let index = currentLevel; index < targetLevel; index += 1) {
+      const stepPrice = getCurrentPerfPrice(vehicle, perfName, index);
+      steps[index] = stepPrice;
+      priceDelta += stepPrice;
+    }
+  } else {
+    const removedPrice = Number(steps[currentLevel - 1]) || 0;
+    steps[currentLevel - 1] = 0;
+    priceDelta = -removedPrice;
+  }
+
+  vehicle[perfName + '_level'] = targetLevel;
+  vehicle[perfName + '_paid'] = Math.max(
+    0,
+    (Number(vehicle[perfName + '_paid']) || 0) + priceDelta
+  );
+  vehicle[perfName + '_steps'] = JSON.stringify(steps);
+  vehicle.depense_total = Math.max(
+    0,
+    (Number(vehicle.depense_total) || 0) + priceDelta
+  );
+}
+
+function applyGaragePerformanceMutationResult(result) {
+  if (!result || result.type !== 'garage_performance_mutation') {
+    throw new Error('Réponse de sauvegarde des performances invalide.');
+  }
+
+  const vehicle = findGarageVehicle(result.cardId);
+
+  if (!vehicle) {
+    throw new Error('Véhicule introuvable après la sauvegarde.');
+  }
+
+  const perfName = String(result.perfName || '');
+  const level = Number(result.level);
+  const paid = Number(result.paid);
+  const depenseTotal = Number(result.depenseTotal);
+
+  if (
+    !perfName ||
+    !Number.isInteger(level) ||
+    level < 0 ||
+    !Number.isFinite(paid) ||
+    !Number.isFinite(depenseTotal) ||
+    !Array.isArray(result.steps)
+  ) {
+    throw new Error('Réponse de sauvegarde des performances incomplète.');
+  }
+
+  vehicle[perfName + '_level'] = level;
+  vehicle[perfName + '_paid'] = paid;
+  vehicle[perfName + '_steps'] = JSON.stringify(result.steps);
+  vehicle.depense_total = depenseTotal;
+
+  if (result.updatedAt) vehicle.updated_at = result.updatedAt;
+  if (result.revisionState) data.revisionState = result.revisionState;
+}
+
+async function recoverGarageAfterPerformanceError(error) {
+  if (isGarageSessionError(error)) {
+    redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
+    return;
+  }
+
+  try {
+    await loadGarageDataFromServer();
+  } catch (reloadError) {
+    if (isGarageSessionError(reloadError)) {
+      redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
+      return;
+    }
+
+    setError(reloadError.message || error.message);
+  }
+}
+
+function enqueueGaragePerformanceMutation(cardId, action, payload) {
+  const queueGeneration = garagePerformanceQueueGeneration;
+  const pendingCount =
+    (pendingGaragePerformanceCounts.get(Number(cardId)) || 0) + 1;
+
+  pendingGaragePerformanceCounts.set(Number(cardId), pendingCount);
+
+  const job = garagePerformanceMutationChain.then(async () => {
+    if (queueGeneration !== garagePerformanceQueueGeneration) return null;
+
+    try {
+      return await api(
+        action,
+        Object.assign({}, payload, { compact: true }),
+        token
+      );
+    } catch (error) {
+      if (queueGeneration === garagePerformanceQueueGeneration) {
+        garagePerformanceQueueGeneration += 1;
+        setError(error.message);
+        await recoverGarageAfterPerformanceError(error);
+      }
+
+      return null;
+    }
+  });
+
+  garagePerformanceMutationChain = job.catch(() => null);
+
+  void job.then(result => {
+    const numericCardId = Number(cardId);
+    const remaining = Math.max(
+      0,
+      (pendingGaragePerformanceCounts.get(numericCardId) || 1) - 1
+    );
+
+    if (remaining === 0) {
+      pendingGaragePerformanceCounts.delete(numericCardId);
+    } else {
+      pendingGaragePerformanceCounts.set(numericCardId, remaining);
+    }
+
+    if (
+      !result ||
+      queueGeneration !== garagePerformanceQueueGeneration ||
+      remaining > 0
+    ) {
+      return;
+    }
+
+    try {
+      applyGaragePerformanceMutationResult(result);
+      saveGarageCache();
+      renderGarage();
+    } catch (error) {
+      garagePerformanceQueueGeneration += 1;
+      setError(error.message);
+      void recoverGarageAfterPerformanceError(error);
+    }
+  }).catch(() => {
+    /* La récupération est déjà gérée dans la tâche de sauvegarde. */
+  });
+}
+
 async function loadGarage() {
   try {
     setError('');
@@ -1311,17 +1479,19 @@ async function togglePerf(cardId, perfName, level, checked) {
         cardId,
         perfName,
         targetLevel: level - 1
-      };
+  };
 
-  try {
-    setError('');
-    data = await api(action, payload, token);
-    saveGarageCache();
-    renderGarage();
-  } catch (error) {
-    setError(error.message);
-    loadGarage();
+  const vehicle = findGarageVehicle(cardId);
+
+  if (!vehicle) {
+    setError('Véhicule introuvable dans l’inventaire.');
+    return;
   }
+
+  setError('');
+  applyOptimisticPerformanceChange(vehicle, perfName, level, checked);
+  renderGarage();
+  enqueueGaragePerformanceMutation(cardId, action, payload);
 }
 
 async function handleGarageTariffScopeChange() {
