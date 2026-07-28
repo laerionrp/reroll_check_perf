@@ -1,8 +1,8 @@
 let appData = null;
 let selectedVehicle = null;
 
-const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_3';
-const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_3';
+const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_4';
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_4';
 const PUBLIC_LEGACY_CACHE_KEYS = [
   'rcp_public_data_v1_3_2',
   'rcp_public_data_v1_3_2_',
@@ -103,7 +103,7 @@ function isCompatiblePublicData(candidate) {
 function requireCompatiblePublicData(candidate) {
   if (!isCompatiblePublicData(candidate)) {
     throw new Error(
-      'Version de l’API incompatible. Déploie le backend v1.3.3.'
+      'Version de l’API incompatible. Déploie le backend v1.3.4.'
     );
   }
 

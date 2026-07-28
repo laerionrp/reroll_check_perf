@@ -3,12 +3,12 @@ const settingsError = document.getElementById('settingsError');
 const settingsContent = document.getElementById('settingsContent');
 const SETTINGS_TAB_KEY = 'rcp_settings_active_tab_v1';
 const SETTINGS_PERFORMANCE_KEY = 'rcp_settings_open_performance_v1';
-const SETTINGS_CACHE_KEY = 'rcp_settings_data_v1_3_3';
-const SETTINGS_CACHE_TIME_KEY = 'rcp_settings_data_time_v1_3_3';
-const SETTINGS_CACHE_TOKEN_KEY = 'rcp_settings_data_token_v1_3_3';
-const SETTINGS_CATALOGUE_CACHE_KEY = 'rcp_settings_catalogue_v1_3_3';
-const SETTINGS_CATALOGUE_CACHE_TIME_KEY = 'rcp_settings_catalogue_time_v1_3_3';
-const SETTINGS_CATALOGUE_CACHE_TOKEN_KEY = 'rcp_settings_catalogue_token_v1_3_3';
+const SETTINGS_CACHE_KEY = 'rcp_settings_data_v1_3_4';
+const SETTINGS_CACHE_TIME_KEY = 'rcp_settings_data_time_v1_3_4';
+const SETTINGS_CACHE_TOKEN_KEY = 'rcp_settings_data_token_v1_3_4';
+const SETTINGS_CATALOGUE_CACHE_KEY = 'rcp_settings_catalogue_v1_3_4';
+const SETTINGS_CATALOGUE_CACHE_TIME_KEY = 'rcp_settings_catalogue_time_v1_3_4';
+const SETTINGS_CATALOGUE_CACHE_TOKEN_KEY = 'rcp_settings_catalogue_token_v1_3_4';
 const SETTINGS_CACHE_DURATION = 10 * 60 * 1000;
 const SETTINGS_CATALOGUE_CACHE_DURATION = 30 * 60 * 1000;
 const PERFORMANCE_ORDER = ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'];
@@ -31,6 +31,13 @@ let syncApplyState = null;
 let syncApplyResult = null;
 let syncAnalysisTimer = null;
 let syncMessageTimer = null;
+let catalogueEditorVehicleId = '';
+let catalogueSaveState = null;
+let catalogueSaveResult = null;
+let catalogueSearchValue = '';
+let catalogueStatusValue = 'all';
+let catalogueCategoryValue = 'all';
+let catalogueDealershipValue = 'all';
 const SYNC_WAIT_MESSAGES = [
   'Ouverture du capot de DATA…',
   'Comptage des boulons du catalogue…',
@@ -216,7 +223,7 @@ function clearSettingsCatalogueCacheOnly() {
 }
 
 function clearTariffCaches() {
-  ['v1_3_2', 'v1_3_3'].forEach(version => {
+  ['v1_3_2', 'v1_3_3', 'v1_3_4'].forEach(version => {
     localStorage.removeItem('rcp_public_data_' + version);
     localStorage.removeItem('rcp_public_data_time_' + version);
     ['', 'LS', 'BC'].forEach(scope => {
@@ -469,6 +476,78 @@ function togglePerformanceSettings(key, isOpen) {
   localStorage.setItem(SETTINGS_PERFORMANCE_KEY, isOpen ? '__none__' : key);
   renderSettings();
 }
+
+function formatCataloguePrice(value) {
+  return new Intl.NumberFormat('fr-FR').format(Number(value) || 0);
+}
+
+function getCatalogueEditorVehicle() {
+  return (settingsData.vehicles || []).find(item =>
+    String(item.vehicle_id || '') === String(catalogueEditorVehicleId)
+  ) || null;
+}
+
+function openCatalogueEditor(vehicleId) {
+  const vehicle = (settingsData.vehicles || []).find(item =>
+    String(item.vehicle_id || '') === String(vehicleId)
+  );
+
+  if (!vehicle) {
+    setSettingsError('Véhicule introuvable dans le catalogue chargé.');
+    return;
+  }
+
+  catalogueEditorVehicleId = String(vehicle.vehicle_id);
+  catalogueSaveResult = null;
+  setSettingsError('');
+  renderSettings();
+  window.setTimeout(() => document.getElementById('catalogue-name')?.focus(), 0);
+}
+
+function closeCatalogueEditor() {
+  catalogueEditorVehicleId = '';
+  catalogueSaveResult = null;
+  catalogueSaveState = null;
+  renderSettings();
+}
+
+function renderCatalogueResetControl(field, overrideFields) {
+  const hasOverride = overrideFields.includes(field);
+  return `<label class="catalogue-reset"><input type="checkbox" id="catalogue-reset-${field}" ${hasOverride ? '' : 'disabled'}> ${hasOverride ? 'Supprimer la correction manuelle' : 'Aucune correction manuelle'}</label>`;
+}
+
+function renderCatalogueEditor() {
+  const vehicle = getCatalogueEditorVehicle();
+  if (!vehicle) return '';
+
+  const saving = Boolean(catalogueSaveState && catalogueSaveState.running);
+  const overrides = Array.isArray(vehicle.override_fields) ? vehicle.override_fields : [];
+  const status = catalogueSaveResult
+    ? `<div class="settings-save-status ${catalogueSaveResult.changed ? 'success' : ''}" role="status"><strong>${catalogueSaveResult.changed ? 'Véhicule enregistré.' : 'Aucune modification détectée.'}</strong></div>`
+    : '';
+  const saveStatus = saving
+    ? '<div class="settings-save-status saving" role="status"><span class="settings-save-spinner" aria-hidden="true"></span><strong>Enregistrement du véhicule…</strong></div>'
+    : '';
+
+  return `<section class="catalogue-editor">
+    <div class="catalogue-editor-header"><div><h3>Modifier le véhicule</h3><p class="settings-form-help">Le <code>vehicle_id</code> reste immuable. Les champs modifiés sont enregistrés comme corrections manuelles et ne seront pas écrasés par DATA.</p></div><button type="button" class="secondary-button" onclick="closeCatalogueEditor()">Fermer</button></div>
+    ${status}${saveStatus}
+    <form class="catalogue-editor-form" onsubmit="saveCatalogueVehicle(event)">
+      <div class="catalogue-immutable"><span>vehicle_id</span><code>${escapeSettings(vehicle.vehicle_id)}</code></div>
+      <label>Nom<input id="catalogue-name" maxlength="200" value="${escapeSettings(vehicle.name)}" ${saving ? 'disabled' : ''}>${renderCatalogueResetControl('name', overrides)}</label>
+      <label>Prix catalogue<input id="catalogue-price" type="number" min="0" step="1" inputmode="decimal" value="${escapeSettings(vehicle.price)}" ${saving ? 'disabled' : ''}>${renderCatalogueResetControl('price', overrides)}</label>
+      <label>Catégorie<input id="catalogue-category" maxlength="120" value="${escapeSettings(vehicle.category)}" ${saving ? 'disabled' : ''}>${renderCatalogueResetControl('category', overrides)}</label>
+      <label>Dealership<input id="catalogue-dealership" maxlength="120" value="${escapeSettings(vehicle.dealership_id)}" ${saving ? 'disabled' : ''}>${renderCatalogueResetControl('dealership_id', overrides)}</label>
+      <label>Fabricant<input id="catalogue-manufacturer" maxlength="120" value="${escapeSettings(vehicle.Fabricant || '')}" ${saving ? 'disabled' : ''}>${renderCatalogueResetControl('manufacturer', overrides)}</label>
+      <label>Photo (URL)<input id="catalogue-photo" maxlength="1000" value="${escapeSettings(vehicle.photo_url || '')}" ${saving ? 'disabled' : ''}>${renderCatalogueResetControl('photo_url', overrides)}</label>
+      <label>Statut catalogue<select id="catalogue-status-edit" ${saving ? 'disabled' : ''}><option value="active" ${vehicle.catalogue_status === 'active' ? 'selected' : ''}>Actif</option><option value="retired" ${vehicle.catalogue_status === 'retired' ? 'selected' : ''}>Retiré</option></select>${renderCatalogueResetControl('catalogue_status', overrides)}</label>
+      <label class="catalogue-comment-field">Commentaire<textarea id="catalogue-comment" maxlength="5000" rows="3" ${saving ? 'disabled' : ''}>${escapeSettings(vehicle.comment || '')}</textarea>${renderCatalogueResetControl('comment', overrides)}</label>
+      <label>Motif de la modification <input id="catalogue-reason" maxlength="300" placeholder="Ex. correction du tarif concession" ${saving ? 'disabled' : ''}></label>
+      <div class="catalogue-editor-actions"><button type="submit" ${saving ? 'disabled' : ''}>${saving ? 'Enregistrement…' : 'Enregistrer la correction'}</button><button type="button" class="secondary-button" onclick="closeCatalogueEditor()" ${saving ? 'disabled' : ''}>Annuler</button></div>
+    </form>
+  </section>`;
+}
+
 function renderCatalogue() {
   const vehicles = settingsData.vehicles || [];
   if (settingsCatalogueLoading) {
@@ -477,11 +556,116 @@ function renderCatalogue() {
   if (!settingsData.catalogueLoaded) {
     return panel('Catalogue', '<p>Ouvre cet onglet pour charger le catalogue.</p>', 'catalogue');
   }
-  return panel('Catalogue', `<div class="settings-toolbar"><input id="catalogueSearch" placeholder="Rechercher" oninput="filterCatalogue()"><select id="catalogueStatus" onchange="filterCatalogue()"><option value="all">Tous</option><option value="active">Actifs</option><option value="retired">Retirés</option></select></div><p><strong>${vehicles.length}</strong> véhicules</p><div class="settings-table-wrap"><table id="catalogueTable"><thead><tr><th>Nom</th><th>Prix</th><th>Catégorie</th><th>Dealership</th><th>Statut</th></tr></thead><tbody>${vehicles.map(item => `<tr data-search="${escapeSettings((item.name + ' ' + item.category + ' ' + item.dealership_id).toLowerCase())}" data-status="${escapeSettings(item.catalogue_status)}"><td>${escapeSettings(item.name)}</td><td>${escapeSettings(item.price)} $</td><td>${escapeSettings(item.category)}</td><td>${escapeSettings(item.dealership_id)}</td><td>${escapeSettings(item.catalogue_status)}</td></tr>`).join('')}</tbody></table></div>`, 'catalogue');
+  const categories = Array.from(new Set(vehicles.map(item => String(item.category || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'));
+  const dealerships = Array.from(new Set(vehicles.map(item => String(item.dealership_id || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'));
+  const search = catalogueSearchValue.toLowerCase();
+  const rowMatches = item => {
+    const searchable = [item.name, item.category, item.dealership_id, item.Fabricant, item.vehicle_id].join(' ').toLowerCase();
+    return searchable.includes(search) &&
+      (catalogueStatusValue === 'all' || String(item.catalogue_status) === catalogueStatusValue) &&
+      (catalogueCategoryValue === 'all' || String(item.category) === catalogueCategoryValue) &&
+      (catalogueDealershipValue === 'all' || String(item.dealership_id) === catalogueDealershipValue);
+  };
+  const rows = vehicles.map(item => {
+    const vehicleId = String(item.vehicle_id || '');
+    const overrides = Array.isArray(item.override_fields) ? item.override_fields : [];
+    const manualBadge = overrides.length ? `<span class="catalogue-badge">Manuel · ${escapeSettings(overrides.length)}</span>` : '';
+    const action = vehicleId
+      ? `<button type="button" class="secondary-button catalogue-edit-button" onclick="openCatalogueEditor('${escapeSettings(vehicleId)}')">Modifier</button>`
+      : '<span class="settings-form-help">vehicle_id manquant</span>';
+    return `<tr data-search="${escapeSettings([item.name, item.category, item.dealership_id, item.Fabricant, vehicleId].join(' ').toLowerCase())}" data-status="${escapeSettings(item.catalogue_status)}" data-category="${escapeSettings(item.category)}" data-dealership="${escapeSettings(item.dealership_id)}"${rowMatches(item) ? '' : ' hidden'}><td><strong>${escapeSettings(item.name)}</strong>${manualBadge}</td><td>${escapeSettings(formatCataloguePrice(item.price))} $</td><td>${escapeSettings(item.category)}</td><td>${escapeSettings(item.dealership_id)}</td><td>${escapeSettings(item.catalogue_status)}</td><td>${action}</td></tr>`;
+  }).join('');
+  const editor = renderCatalogueEditor();
+  const saveNotice = catalogueSaveResult && catalogueSaveResult.savedAt
+    ? `<p class="settings-form-help">Dernière sauvegarde : ${escapeSettings(catalogueSaveResult.savedAt)}</p>`
+    : '';
+  return panel('Catalogue', `${editor}<div class="settings-toolbar catalogue-toolbar"><input id="catalogueSearch" value="${escapeSettings(catalogueSearchValue)}" placeholder="Rechercher un nom, fabricant ou vehicle_id" oninput="filterCatalogue()"><select id="catalogueStatus" onchange="filterCatalogue()"><option value="all" ${catalogueStatusValue === 'all' ? 'selected' : ''}>Tous les statuts</option><option value="active" ${catalogueStatusValue === 'active' ? 'selected' : ''}>Actifs</option><option value="retired" ${catalogueStatusValue === 'retired' ? 'selected' : ''}>Retirés</option></select><select id="catalogueCategory" onchange="filterCatalogue()"><option value="all">Toutes les catégories</option>${categories.map(value => `<option value="${escapeSettings(value)}" ${catalogueCategoryValue === value ? 'selected' : ''}>${escapeSettings(value)}</option>`).join('')}</select><select id="catalogueDealership" onchange="filterCatalogue()"><option value="all">Tous les dealerships</option>${dealerships.map(value => `<option value="${escapeSettings(value)}" ${catalogueDealershipValue === value ? 'selected' : ''}>${escapeSettings(value)}</option>`).join('')}</select></div><p><strong>${vehicles.length}</strong> véhicules · <span class="settings-form-help">les badges « Manuel » indiquent les corrections protégées de DATA</span></p>${saveNotice}<div class="settings-table-wrap"><table id="catalogueTable"><thead><tr><th>Nom</th><th>Prix</th><th>Catégorie</th><th>Dealership</th><th>Statut</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`, 'catalogue');
 }
 function filterCatalogue() {
-  const search = document.getElementById('catalogueSearch').value.toLowerCase(); const status = document.getElementById('catalogueStatus').value;
-  document.querySelectorAll('#catalogueTable tbody tr').forEach(row => { row.hidden = !row.dataset.search.includes(search) || (status !== 'all' && row.dataset.status !== status); });
+  const searchInput = document.getElementById('catalogueSearch');
+  const statusInput = document.getElementById('catalogueStatus');
+  const categoryInput = document.getElementById('catalogueCategory');
+  const dealershipInput = document.getElementById('catalogueDealership');
+  if (!searchInput || !statusInput || !categoryInput || !dealershipInput) return;
+  catalogueSearchValue = searchInput.value.toLowerCase();
+  catalogueStatusValue = statusInput.value;
+  catalogueCategoryValue = categoryInput.value;
+  catalogueDealershipValue = dealershipInput.value;
+  document.querySelectorAll('#catalogueTable tbody tr').forEach(row => {
+    row.hidden = !row.dataset.search.includes(catalogueSearchValue) ||
+      (catalogueStatusValue !== 'all' && row.dataset.status !== catalogueStatusValue) ||
+      (catalogueCategoryValue !== 'all' && row.dataset.category !== catalogueCategoryValue) ||
+      (catalogueDealershipValue !== 'all' && row.dataset.dealership !== catalogueDealershipValue);
+  });
+}
+
+async function saveCatalogueVehicle(event) {
+  event.preventDefault();
+  if (catalogueSaveState && catalogueSaveState.running) return;
+
+  const vehicle = getCatalogueEditorVehicle();
+  if (!vehicle) {
+    setSettingsError('Véhicule introuvable. Recharge le catalogue.');
+    return;
+  }
+
+  const fields = ['name', 'price', 'category', 'dealership_id', 'manufacturer', 'photo_url', 'catalogue_status', 'comment'];
+  const changes = {
+    name: document.getElementById('catalogue-name').value,
+    price: document.getElementById('catalogue-price').value,
+    category: document.getElementById('catalogue-category').value,
+    dealership_id: document.getElementById('catalogue-dealership').value,
+    manufacturer: document.getElementById('catalogue-manufacturer').value,
+    photo_url: document.getElementById('catalogue-photo').value,
+    catalogue_status: document.getElementById('catalogue-status-edit').value,
+    comment: document.getElementById('catalogue-comment').value
+  };
+  const resetFields = fields.filter(field => document.getElementById('catalogue-reset-' + field)?.checked);
+  const reason = String(document.getElementById('catalogue-reason').value || '').trim();
+  const expectedRevision = String(settingsData.revisionState?.vehiclesRevision || '').trim();
+
+  setSettingsError('');
+  catalogueSaveResult = null;
+  catalogueSaveState = { running: true };
+  renderSettings();
+
+  try {
+    const result = await api('updateRcpVehicleCatalogue', {
+      vehicleId: vehicle.vehicle_id,
+      changes,
+      resetFields,
+      reason,
+      expectedRevision
+    }, settingsToken);
+    settingsData.vehicles = (settingsData.vehicles || []).map(item =>
+      String(item.vehicle_id || '') === String(result.vehicle.vehicle_id)
+        ? result.vehicle
+        : item
+    );
+    settingsData.revisionState = result.revisionState || settingsData.revisionState;
+    catalogueSaveResult = {
+      changed: result.changed,
+      fields: result.changedFields || [],
+      savedAt: result.savedAt
+    };
+    clearTariffCaches();
+    saveSettingsCatalogueCache({
+      apiVersion: CONFIG.VERSION,
+      revisionState: settingsData.revisionState,
+      vehicles: settingsData.vehicles,
+      catalogueLoaded: true
+    });
+  } catch (error) {
+    setSettingsError('Enregistrement impossible : ' + error.message);
+    if (/catalogue a changé|recharge la liste/i.test(error.message)) {
+      clearSettingsCatalogueCacheOnly();
+      settingsData.catalogueLoaded = false;
+      void loadSettingsCatalogue();
+    }
+  } finally {
+    catalogueSaveState = null;
+    renderSettings();
+  }
 }
 function formatElapsed(milliseconds) {
   const seconds = Math.max(0, Math.floor(milliseconds / 1000));
@@ -497,8 +681,8 @@ function syncLines(item) {
 function renderSyncDetails(preview) {
   const groups = [];
   if (preview.added.length) groups.push(`<h3>Nouveaux véhicules</h3><ul class="sync-detail-list">${preview.added.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}</li>`).join('')}</ul>`);
-  if (preview.changed.length) groups.push(`<h3>Informations modifiées</h3><ul class="sync-detail-list">${preview.changed.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}<ul>${(item.changes || []).map(change => `<li>${escapeSettings(change.label)} : <del>${escapeSettings(change.before || 'vide')}</del> → <ins>${escapeSettings(change.after || 'vide')}</ins></li>`).join('')}</ul></li>`).join('')}</ul>`);
-  if (preview.priceChanged.length) groups.push(`<h3>Tarifs modifiés</h3><ul class="sync-detail-list">${preview.priceChanged.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}<div>${escapeSettings(item.oldPrice)} $ → ${escapeSettings(item.newPrice)} $</div></li>`).join('')}</ul>`);
+  if (preview.changed.length) groups.push(`<h3>Informations modifiées</h3><ul class="sync-detail-list">${preview.changed.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}<ul>${(item.changes || []).map(change => `<li>${escapeSettings(change.label)} : <del>${escapeSettings(change.before || 'vide')}</del> → <ins>${escapeSettings(change.after || 'vide')}</ins>${change.manualOverride ? ' <span class="catalogue-protected">correction manuelle conservée</span>' : ''}</li>`).join('')}</ul></li>`).join('')}</ul>`);
+  if (preview.priceChanged.length) groups.push(`<h3>Tarifs modifiés</h3><ul class="sync-detail-list">${preview.priceChanged.map(item => `<li><strong>${escapeSettings(item.name)}</strong>${syncLines(item)}<div>${escapeSettings(item.oldPrice)} $ → ${escapeSettings(item.newPrice)} $${item.manualOverride ? ' <span class="catalogue-protected">correction manuelle conservée</span>' : ''}</div></li>`).join('')}</ul>`);
   if (preview.retired.length) groups.push(`<h3>Véhicules absents de DATA</h3><ul class="sync-detail-list">${preview.retired.map(item => `<li><strong>${escapeSettings(item.name || item)}</strong>${syncLines(item)}</li>`).join('')}</ul>`);
   return groups.length ? `<div class="sync-details">${groups.join('')}</div>` : '<p class="sync-clean">Aucun changement détecté : DATA et RCP_VEHICLES sont alignés.</p>';
 }
@@ -512,8 +696,8 @@ function renderSync() {
     return panel('DATA → RCP_VEHICLES', `<div class="sync-progress" role="status" aria-live="polite"><div class="sync-progress-track"><span></span></div><strong>Synchronisation en cours…</strong><span>Application des changements depuis ${formatElapsed(elapsed)}</span></div><button disabled>Synchronisation en cours…</button><p>Ne ferme pas cette page pendant l’opération.</p>`, 'sync');
   }
   const preview = syncPreview;
-  const applied = syncApplyResult ? `<div class="sync-clean" role="status" aria-live="polite"><strong>Synchronisation terminée avec succès.</strong><br>${syncApplyResult.added} ajout${syncApplyResult.added > 1 ? 's' : ''} · ${syncApplyResult.updated} mise${syncApplyResult.updated > 1 ? 's' : ''} à jour · ${syncApplyResult.retired} retrait${syncApplyResult.retired > 1 ? 's' : ''} · ${syncApplyResult.priceHistoryCreated} tarif${syncApplyResult.priceHistoryCreated > 1 ? 's' : ''} historisé${syncApplyResult.priceHistoryCreated > 1 ? 's' : ''}<br>Terminée en ${escapeSettings(syncApplyResult.duration)}.</div>` : '';
-  const summary = preview ? `<div class="settings-grid sync-summary"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article><article>Inchangés<strong>${(preview.unchanged || []).length}</strong></article></div>${preview.analysisDuration ? `<p class="sync-duration">Analyse terminée en ${escapeSettings(preview.analysisDuration)}.</p>` : ''}${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}${renderSyncDetails(preview)}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
+  const applied = syncApplyResult ? `<div class="sync-clean" role="status" aria-live="polite"><strong>Synchronisation terminée avec succès.</strong><br>${syncApplyResult.added} ajout${syncApplyResult.added > 1 ? 's' : ''} · ${syncApplyResult.updated} mise${syncApplyResult.updated > 1 ? 's' : ''} à jour · ${syncApplyResult.retired} retrait${syncApplyResult.retired > 1 ? 's' : ''} · ${syncApplyResult.priceHistoryCreated} tarif${syncApplyResult.priceHistoryCreated > 1 ? 's' : ''} historisé${syncApplyResult.priceHistoryCreated > 1 ? 's' : ''} · ${syncApplyResult.protectedChanges || 0} correction${syncApplyResult.protectedChanges > 1 ? 's' : ''} protégée${syncApplyResult.protectedChanges > 1 ? 's' : ''}<br>Terminée en ${escapeSettings(syncApplyResult.duration)}.</div>` : '';
+  const summary = preview ? `<div class="settings-grid sync-summary"><article>Ajouts<strong>${preview.added.length}</strong></article><article>Modifications<strong>${preview.changed.length}</strong></article><article>Prix modifiés<strong>${preview.priceChanged.length}</strong></article><article>Retraits<strong>${preview.retired.length}</strong></article><article>Inchangés<strong>${(preview.unchanged || []).length}</strong></article><article>Corrections protégées<strong>${preview.protectedChanges || 0}</strong></article></div>${preview.analysisDuration ? `<p class="sync-duration">Analyse terminée en ${escapeSettings(preview.analysisDuration)}.</p>` : ''}${preview.blockingErrors.length ? `<div class="error">${preview.blockingErrors.map(escapeSettings).join('<br>')}</div>` : ''}${renderSyncDetails(preview)}<button onclick="applySync()" ${preview.ready ? '' : 'disabled'}>Appliquer la synchronisation</button>` : '<p>L’analyse ne modifie aucune donnée.</p>';
   return panel('DATA → RCP_VEHICLES', `${applied}<button onclick="analyzeSync()">Analyser les changements</button>${summary}`, 'sync');
 }
 function renderHistory() {

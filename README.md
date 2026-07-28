@@ -1,6 +1,6 @@
 # Reroll Check Perf
 
-## v1.3.3 — cache, révisions, informations légales et sauvegarde fiabilisée
+## v1.3.4 — édition du catalogue et corrections manuelles protégées
 
 Les nouveaux tarifs de performances utilisent deux plafonds distincts : d'abord
 le prix HT du palier, puis sa TVA. `js/performance-pricing.js` porte cette règle
@@ -79,6 +79,11 @@ de véhicules restent inchangés.
 Une page `mentions-legales.html` est accessible discrètement depuis le texte
 de version affiché en bas des pages.
 
+L’onglet **Catalogue** de Paramètres permet maintenant de modifier les champs
+des véhicules à partir de leur `vehicle_id`. Les corrections sont signalées par
+un badge « Manuel », conservées lors des synchronisations DATA et réinitialisables
+champ par champ. Un changement de prix manuel est historisé.
+
 ## Déploiement
 
 - Les changements frontend sont publiés avec GitHub Pages après un
@@ -102,9 +107,9 @@ Le mot de passe de l’inventaire est stocké uniquement dans la propriété
 de script Apps Script `RCP_LOGIN_PASSWORD`. Il ne doit jamais être ajouté
 au dépôt Git.
 
-Pour l’instance déjà initialisée en v1.3.2, aucune initialisation ni migration
+Pour l’instance déjà initialisée en v1.3.3, aucune initialisation ni migration
 n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.3**
+**v1.3.4**

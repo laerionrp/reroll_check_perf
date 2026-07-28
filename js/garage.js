@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_3';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_3';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_3';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_4';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_4';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_4';
 const GARAGE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const perfLabelsGarage = {
@@ -41,7 +41,6 @@ let garagePerformanceQueueGeneration = 0;
 let garageVehicleFilter = 'active';
 let garageMasonryFrame = 0;
 let garageViewportRestoreFrame = 0;
-let garageScrollRestoreFrame = 0;
 let garageViewportAnchor = null;
 
 const GARAGE_STATUS_OPTIONS = [
@@ -183,57 +182,6 @@ function scheduleGarageViewportRestore(frameCount = 4) {
   );
 }
 
-function getGarageScrollPosition() {
-  return {
-    left: window.scrollX || document.documentElement.scrollLeft || 0,
-    top: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
-  };
-}
-
-function restoreGarageScrollPosition(position) {
-  if (!position) return;
-
-  const currentLeft = window.scrollX || document.documentElement.scrollLeft || 0;
-  const currentTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-
-  if (
-    Math.abs(currentLeft - position.left) > 0.5 ||
-    Math.abs(currentTop - position.top) > 0.5
-  ) {
-    window.scrollTo(position.left, position.top);
-  }
-}
-
-function scheduleGarageScrollRestore(position, frameCount = 4) {
-  window.cancelAnimationFrame(garageScrollRestoreFrame);
-
-  const restoreOnNextFrame = () => {
-    restoreGarageScrollPosition(position);
-    frameCount -= 1;
-
-    if (frameCount > 0) {
-      garageScrollRestoreFrame = window.requestAnimationFrame(
-        restoreOnNextFrame
-      );
-      return;
-    }
-
-    garageScrollRestoreFrame = 0;
-  };
-
-  garageScrollRestoreFrame = window.requestAnimationFrame(
-    restoreOnNextFrame
-  );
-}
-
-function renderGaragePreservingScroll() {
-  const position = getGarageScrollPosition();
-
-  renderGarage();
-  restoreGarageScrollPosition(position);
-  scheduleGarageScrollRestore(position);
-}
-
 function preserveGarageViewportPosition(element, updateState) {
   if (!element) {
     updateState();
@@ -361,7 +309,7 @@ function isCompatibleGarageData(candidate) {
 function requireCompatibleGarageData(candidate) {
   if (!isCompatibleGarageData(candidate)) {
     throw new Error(
-      'Version de l’API Inventaire incompatible. Déploie le backend v1.3.3.'
+      'Version de l’API Inventaire incompatible. Déploie le backend v1.3.4.'
     );
   }
 
@@ -420,7 +368,7 @@ function clearGarageCache() {
   localStorage.removeItem(GARAGE_CACHE_KEY);
   localStorage.removeItem(GARAGE_CACHE_TIME_KEY);
   localStorage.removeItem(GARAGE_CACHE_TOKEN_KEY);
-  ['v1_3_2', 'v1_3_3'].forEach(version => {
+  ['v1_3_2', 'v1_3_3', 'v1_3_4'].forEach(version => {
     ['', 'LS', 'BC'].forEach(scope => {
       const suffix = scope ? '_' + scope : '';
       localStorage.removeItem('rcp_garage_data_' + version + suffix);
@@ -912,7 +860,7 @@ function enqueueGaragePerformanceLevelMutation(
     try {
       applyGaragePerformanceMutationResult(result);
       saveGarageCache();
-      renderGaragePreservingScroll();
+      renderGarage();
     } catch (error) {
       garagePerformanceQueueGeneration += 1;
       clearGaragePerformanceQueue();
@@ -1583,13 +1531,13 @@ function togglePerf(cardId, perfName, level, checked) {
 
   if (!Number.isInteger(targetLevel) || targetLevel < 0) {
     setError('Niveau de performance invalide.');
-    renderGaragePreservingScroll();
+    renderGarage();
     return;
   }
 
   setError('');
   applyOptimisticPerformanceChange(vehicle, perfName, level, checked);
-  renderGaragePreservingScroll();
+  renderGarage();
   scheduleGaragePerformanceMutation(
     cardId,
     perfName,
