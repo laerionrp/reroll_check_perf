@@ -32,7 +32,10 @@ const GARAGE_PANEL_DEFAULT_STATES = new Map([
 ]);
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
-const pendingGaragePerformanceCounts = new Map();
+const pendingGaragePerformanceTargets = new Map();
+const garagePerformanceDebounceTimers = new Map();
+const garagePerformanceMutationVersions = new Map();
+const GARAGE_PERFORMANCE_DEBOUNCE_MS = 120;
 let garagePerformanceMutationChain = Promise.resolve();
 let garagePerformanceQueueGeneration = 0;
 let garageVehicleFilter = 'active';
@@ -795,25 +798,46 @@ async function recoverGarageAfterPerformanceError(error) {
   }
 }
 
-function enqueueGaragePerformanceMutation(cardId, action, payload) {
-  const queueGeneration = garagePerformanceQueueGeneration;
-  const pendingCount =
-    (pendingGaragePerformanceCounts.get(Number(cardId)) || 0) + 1;
+function garagePerformanceMutationKey(cardId, perfName) {
+  return `${Number(cardId)}|${normalizeGarage(perfName)}`;
+}
 
-  pendingGaragePerformanceCounts.set(Number(cardId), pendingCount);
+function clearGaragePerformanceQueue() {
+  garagePerformanceDebounceTimers.forEach(timer => clearTimeout(timer));
+  garagePerformanceDebounceTimers.clear();
+  pendingGaragePerformanceTargets.clear();
+  garagePerformanceMutationVersions.clear();
+}
+
+function enqueueGaragePerformanceLevelMutation(
+  cardId,
+  perfName,
+  targetLevel,
+  tariffScope,
+  intentVersion
+) {
+  const queueGeneration = garagePerformanceQueueGeneration;
+  const mutationKey = garagePerformanceMutationKey(cardId, perfName);
 
   const job = garagePerformanceMutationChain.then(async () => {
     if (queueGeneration !== garagePerformanceQueueGeneration) return null;
 
     try {
       return await api(
-        action,
-        Object.assign({}, payload, { compact: true }),
+        'setPerformanceLevel',
+        {
+          cardId,
+          perfName,
+          targetLevel,
+          tariffScope,
+          compact: true
+        },
         token
       );
     } catch (error) {
       if (queueGeneration === garagePerformanceQueueGeneration) {
         garagePerformanceQueueGeneration += 1;
+        clearGaragePerformanceQueue();
         setError(error.message);
         await recoverGarageAfterPerformanceError(error);
       }
@@ -825,22 +849,10 @@ function enqueueGaragePerformanceMutation(cardId, action, payload) {
   garagePerformanceMutationChain = job.catch(() => null);
 
   void job.then(result => {
-    const numericCardId = Number(cardId);
-    const remaining = Math.max(
-      0,
-      (pendingGaragePerformanceCounts.get(numericCardId) || 1) - 1
-    );
-
-    if (remaining === 0) {
-      pendingGaragePerformanceCounts.delete(numericCardId);
-    } else {
-      pendingGaragePerformanceCounts.set(numericCardId, remaining);
-    }
-
     if (
       !result ||
       queueGeneration !== garagePerformanceQueueGeneration ||
-      remaining > 0
+      garagePerformanceMutationVersions.get(mutationKey) !== intentVersion
     ) {
       return;
     }
@@ -851,12 +863,54 @@ function enqueueGaragePerformanceMutation(cardId, action, payload) {
       renderGarage();
     } catch (error) {
       garagePerformanceQueueGeneration += 1;
+      clearGaragePerformanceQueue();
       setError(error.message);
       void recoverGarageAfterPerformanceError(error);
     }
   }).catch(() => {
     /* La récupération est déjà gérée dans la tâche de sauvegarde. */
   });
+}
+
+function scheduleGaragePerformanceMutation(
+  cardId,
+  perfName,
+  targetLevel,
+  tariffScope
+) {
+  const mutationKey = garagePerformanceMutationKey(cardId, perfName);
+  const intentVersion =
+    (garagePerformanceMutationVersions.get(mutationKey) || 0) + 1;
+
+  garagePerformanceMutationVersions.set(mutationKey, intentVersion);
+  pendingGaragePerformanceTargets.set(mutationKey, {
+    cardId,
+    perfName,
+    targetLevel,
+    tariffScope,
+    intentVersion
+  });
+
+  const previousTimer = garagePerformanceDebounceTimers.get(mutationKey);
+  if (previousTimer) clearTimeout(previousTimer);
+
+  const timer = window.setTimeout(() => {
+    garagePerformanceDebounceTimers.delete(mutationKey);
+
+    const pending = pendingGaragePerformanceTargets.get(mutationKey);
+    if (!pending || pending.intentVersion !== intentVersion) return;
+
+    pendingGaragePerformanceTargets.delete(mutationKey);
+    enqueueGaragePerformanceLevelMutation(
+      pending.cardId,
+      pending.perfName,
+      pending.targetLevel,
+      pending.tariffScope,
+      pending.intentVersion
+    );
+  }, GARAGE_PERFORMANCE_DEBOUNCE_MS);
+
+  garagePerformanceDebounceTimers.set(mutationKey, timer);
 }
 
 async function loadGarage() {
@@ -1465,22 +1519,7 @@ async function updateGarageStatus(cardId, status) {
   }
 }
 
-async function togglePerf(cardId, perfName, level, checked) {
-  const action = checked ? 'upgradePerformance' : 'downgradePerformance';
-
-  const payload = checked
-    ? {
-        cardId,
-        perfName,
-      newLevel: level,
-      tariffScope: RcpTariff.get()
-      }
-    : {
-        cardId,
-        perfName,
-        targetLevel: level - 1
-  };
-
+function togglePerf(cardId, perfName, level, checked) {
   const vehicle = findGarageVehicle(cardId);
 
   if (!vehicle) {
@@ -1488,10 +1527,23 @@ async function togglePerf(cardId, perfName, level, checked) {
     return;
   }
 
+  const targetLevel = checked ? Number(level) : Number(level) - 1;
+
+  if (!Number.isInteger(targetLevel) || targetLevel < 0) {
+    setError('Niveau de performance invalide.');
+    renderGarage();
+    return;
+  }
+
   setError('');
   applyOptimisticPerformanceChange(vehicle, perfName, level, checked);
   renderGarage();
-  enqueueGaragePerformanceMutation(cardId, action, payload);
+  scheduleGaragePerformanceMutation(
+    cardId,
+    perfName,
+    targetLevel,
+    RcpTariff.get()
+  );
 }
 
 async function handleGarageTariffScopeChange() {
