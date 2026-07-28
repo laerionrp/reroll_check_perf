@@ -41,6 +41,7 @@ let garagePerformanceQueueGeneration = 0;
 let garageVehicleFilter = 'active';
 let garageMasonryFrame = 0;
 let garageViewportRestoreFrame = 0;
+let garageScrollRestoreFrame = 0;
 let garageViewportAnchor = null;
 
 const GARAGE_STATUS_OPTIONS = [
@@ -180,6 +181,57 @@ function scheduleGarageViewportRestore(frameCount = 4) {
   garageViewportRestoreFrame = window.requestAnimationFrame(
     restoreOnNextFrame
   );
+}
+
+function getGarageScrollPosition() {
+  return {
+    left: window.scrollX || document.documentElement.scrollLeft || 0,
+    top: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+  };
+}
+
+function restoreGarageScrollPosition(position) {
+  if (!position) return;
+
+  const currentLeft = window.scrollX || document.documentElement.scrollLeft || 0;
+  const currentTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+  if (
+    Math.abs(currentLeft - position.left) > 0.5 ||
+    Math.abs(currentTop - position.top) > 0.5
+  ) {
+    window.scrollTo(position.left, position.top);
+  }
+}
+
+function scheduleGarageScrollRestore(position, frameCount = 4) {
+  window.cancelAnimationFrame(garageScrollRestoreFrame);
+
+  const restoreOnNextFrame = () => {
+    restoreGarageScrollPosition(position);
+    frameCount -= 1;
+
+    if (frameCount > 0) {
+      garageScrollRestoreFrame = window.requestAnimationFrame(
+        restoreOnNextFrame
+      );
+      return;
+    }
+
+    garageScrollRestoreFrame = 0;
+  };
+
+  garageScrollRestoreFrame = window.requestAnimationFrame(
+    restoreOnNextFrame
+  );
+}
+
+function renderGaragePreservingScroll() {
+  const position = getGarageScrollPosition();
+
+  renderGarage();
+  restoreGarageScrollPosition(position);
+  scheduleGarageScrollRestore(position);
 }
 
 function preserveGarageViewportPosition(element, updateState) {
@@ -860,7 +912,7 @@ function enqueueGaragePerformanceLevelMutation(
     try {
       applyGaragePerformanceMutationResult(result);
       saveGarageCache();
-      renderGarage();
+      renderGaragePreservingScroll();
     } catch (error) {
       garagePerformanceQueueGeneration += 1;
       clearGaragePerformanceQueue();
@@ -1531,13 +1583,13 @@ function togglePerf(cardId, perfName, level, checked) {
 
   if (!Number.isInteger(targetLevel) || targetLevel < 0) {
     setError('Niveau de performance invalide.');
-    renderGarage();
+    renderGaragePreservingScroll();
     return;
   }
 
   setError('');
   applyOptimisticPerformanceChange(vehicle, perfName, level, checked);
-  renderGarage();
+  renderGaragePreservingScroll();
   scheduleGaragePerformanceMutation(
     cardId,
     perfName,
