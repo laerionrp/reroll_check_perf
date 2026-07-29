@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_4';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_4';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_4';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_4_clean';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_4_clean';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_4_clean';
 const GARAGE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const perfLabelsGarage = {
