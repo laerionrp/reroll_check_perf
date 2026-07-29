@@ -70,11 +70,11 @@ lui-même mémorisé. Le backend ne sert aucune page HTML : `doGet()` et `includ
 ne font plus partie de l’architecture.
 
 Dans l’Inventaire, les coches de performances sont appliquées immédiatement à
-l’écran. Les clics rapprochés sur une même performance sont regroupés pendant
-un court délai et envoyés avec l’action `setPerformanceLevel`. La file reste
-séquentielle pour respecter le verrou Apps Script ; une erreur déclenche une
-resynchronisation complète. Les calculs, les prix historiques et les règles
-de véhicules restent inchangés.
+l’écran, mais restent locales tant que le bouton de la fiche n’est pas validé.
+Chaque fiche affiche son indicateur de modifications en attente et son propre
+bouton « Enregistrer les performances ». Une seule requête `setPerformanceLevels`
+enregistre alors les niveaux finaux de toutes les performances de cette fiche.
+Les calculs, les prix historiques et les règles de véhicules restent inchangés.
 
 Une page `mentions-legales.html` est accessible discrètement depuis le texte
 de version affiché en bas des pages.

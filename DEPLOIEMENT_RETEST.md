@@ -7,8 +7,8 @@
    `RCP_SYNC_LOG`.
 2. Remplacer tous les fichiers `.gs` du projet Apps Script par ceux de
    l’archive backend.
-3. Vérifier que `Api.gs` contient `case 'setPerformanceLevel'` et que
-   `Garage.gs` contient `function setPerformanceLevel(...)`.
+3. Vérifier que `Api.gs` contient `case 'setPerformanceLevels'` et que
+   `Garage.gs` contient `function setPerformanceLevels(...)`.
 4. Enregistrer le projet.
 5. Dans **Déployer → Gérer les déploiements**, modifier le Web App actuel et
    choisir **Nouvelle version**.
@@ -42,10 +42,15 @@ de cache évitent de réutiliser les anciennes réponses Catalogue et Inventaire
 ## 3. Retest obligatoire
 
 - Contrôle tarif : charger un véhicule et vérifier les montants habituels.
-- Inventaire : cocher le niveau 1 d’une performance, attendre la confirmation,
-  recharger la page et vérifier que le niveau et le montant restent présents.
-- Cocher rapidement le niveau suivant, attendre la fin de la file, recharger,
-  puis décocher le dernier niveau et recharger à nouveau.
+- Inventaire : cocher plusieurs niveaux ou plusieurs performances sur une
+  même fiche. Vérifier que les cases changent sans appel serveur immédiat,
+  que l’indicateur et le bouton passent dans la teinte de l’en-tête.
+- Cliquer sur « Enregistrer les performances » et vérifier que le bouton
+  revient dans la teinte du fond, puis recharger la page.
+- Modifier une seconde fiche sans l’enregistrer : son indicateur doit rester
+  indépendant et son bouton doit être le seul à enregistrer cette fiche.
+- Tester un retour au niveau initial : l’indicateur doit disparaître sans
+  écriture serveur inutile.
 - Vérifier dans `GARAGE_DB` la ligne du `card_id` : niveau, montant payé,
   colonne `_steps` et `depense_total` doivent être modifiés.
 - Catalogue : modifier un prix ou un nom, enregistrer, recharger Paramètres,

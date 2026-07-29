@@ -615,6 +615,44 @@ button {
   background: var(--section-red);
 }
 
+.garage-performance-save-slot {
+  display: grid;
+  gap: 5px;
+  margin: 7px 8px 8px;
+}
+
+.garage-performance-pending-indicator {
+  min-height: 14px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.garage-performance-save-button {
+  width: 100%;
+  margin: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card-dark);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.garage-performance-save-button.has-pending {
+  border-color: var(--section-red);
+  background: var(--section-red);
+  color: #fff;
+  cursor: pointer;
+}
+
+.garage-performance-save-button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .perf-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1501,6 +1539,15 @@ button {
   .garage-page .perf-row input {
     width: 15px;
     height: 15px;
+  }
+
+  .garage-performance-save-slot {
+    margin: 6px 5px 6px;
+  }
+
+  .garage-performance-save-button {
+    padding: 7px 5px;
+    font-size: 11px;
   }
 
   .modal-actions {
