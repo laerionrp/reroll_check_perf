@@ -1465,21 +1465,6 @@ function renderPerfsGarage(vehicle) {
   let html = '<div class="perfs">';
   const pendingCount = garagePerformanceChangeCount(vehicle.card_id);
   const isSaving = savingGaragePerformanceCards.has(Number(vehicle.card_id));
-  const saveSlotHtml = `
-    <div class="garage-performance-save-slot">
-      <span class="garage-performance-pending-indicator${pendingCount > 0 ? ' has-pending' : ''}" aria-live="polite">
-        ${pendingCount > 0 ? `${pendingCount} modification${pendingCount > 1 ? 's' : ''} en attente` : 'Aucune modification'}
-      </span>
-      <button
-        type="button"
-        class="garage-performance-save-button${pendingCount > 0 ? ' has-pending' : ''}"
-        ${pendingCount === 0 || isSaving ? 'disabled' : ''}
-        onclick="saveGarageVehiclePerformances(${vehicle.card_id})"
-      >
-        ${isSaving ? 'Enregistrement…' : 'Enregistrer les performances'}
-      </button>
-    </div>
-  `;
 
   const entries = Object.entries(data.performances)
     .filter(([perfName]) => shouldShowPerfGarage(vehicle, perfName))
@@ -1496,18 +1481,8 @@ function renderPerfsGarage(vehicle) {
 
   if (entries.length === 0) return '';
 
-  const turboIndex = entries.findIndex(([perfName]) =>
-    normalizeGarage(perfName) === 'turbo'
-  );
-  const saveColumnIndex = turboIndex === -1 ? entries.length - 1 : turboIndex;
-
-  entries.forEach(([perfName, levels], entryIndex) => {
+  entries.forEach(([perfName, levels]) => {
     const current = Number(vehicle[perfName + '_level']) || 0;
-    const isSaveColumn = entryIndex === saveColumnIndex;
-
-    if (isSaveColumn) {
-      html += '<div class="garage-performance-save-column">';
-    }
 
     html += `<div class="perf"><h4>${escapeHtml(levels?.[0]?.performance_label || perfName)}</h4>`;
 
@@ -1536,12 +1511,23 @@ function renderPerfsGarage(vehicle) {
     });
 
     html += '</div>';
-
-    if (isSaveColumn) {
-      html += saveSlotHtml;
-      html += '</div>';
-    }
   });
+
+  html += `
+    <div class="garage-performance-save-slot">
+      <span class="garage-performance-pending-indicator${pendingCount > 0 ? ' has-pending' : ''}" aria-live="polite">
+        ${pendingCount > 0 ? `${pendingCount} modification${pendingCount > 1 ? 's' : ''} en attente` : 'Aucune modification'}
+      </span>
+      <button
+        type="button"
+        class="garage-performance-save-button${pendingCount > 0 ? ' has-pending' : ''}"
+        ${pendingCount === 0 || isSaving ? 'disabled' : ''}
+        onclick="saveGarageVehiclePerformances(${vehicle.card_id})"
+      >
+        ${isSaving ? 'Enregistrement…' : 'Enregistrer les performances'}
+      </button>
+    </div>
+  `;
 
   html += '</div>';
   return html;
