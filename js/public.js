@@ -1,8 +1,8 @@
 let appData = null;
 let selectedVehicle = null;
 
-const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_4_clean';
-const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_4_clean';
+const PUBLIC_CACHE_KEY = 'rcp_public_data_v1_3_4';
+const PUBLIC_CACHE_TIME_KEY = 'rcp_public_data_time_v1_3_4';
 const PUBLIC_LEGACY_CACHE_KEYS = [
   'rcp_public_data_v1_3_2',
   'rcp_public_data_v1_3_2_',

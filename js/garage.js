@@ -1,9 +1,9 @@
 let data = null;
 let token = localStorage.getItem('garage_token') || '';
 
-const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_4_clean';
-const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_4_clean';
-const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_4_clean';
+const GARAGE_CACHE_KEY = 'rcp_garage_data_v1_3_4';
+const GARAGE_CACHE_TIME_KEY = 'rcp_garage_data_time_v1_3_4';
+const GARAGE_CACHE_TOKEN_KEY = 'rcp_garage_data_token_v1_3_4';
 const GARAGE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const perfLabelsGarage = {
@@ -32,8 +32,6 @@ const GARAGE_PANEL_DEFAULT_STATES = new Map([
 ]);
 const vehicleOptionsStates = new Map();
 const pendingGarageFieldUpdates = new Map();
-const pendingGaragePerformanceChanges = new Map();
-const savingGaragePerformanceCards = new Set();
 const pendingGaragePerformanceTargets = new Map();
 const garagePerformanceDebounceTimers = new Map();
 const garagePerformanceMutationVersions = new Map();
@@ -282,9 +280,7 @@ function parseStepsGarage(value) {
 function saveGarageCache() {
   requireCompatibleGarageData(data);
   RcpTariff.resolve(data.tariffScope);
-  const cacheData = JSON.parse(JSON.stringify(data));
-
-  localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(cacheData));
+  localStorage.setItem(GARAGE_CACHE_KEY, JSON.stringify(data));
   localStorage.setItem(GARAGE_CACHE_TIME_KEY, String(Date.now()));
   localStorage.setItem(GARAGE_CACHE_TOKEN_KEY, token);
 }
@@ -813,127 +809,6 @@ function clearGaragePerformanceQueue() {
   garagePerformanceMutationVersions.clear();
 }
 
-function garagePerformanceLevelsForVehicle(vehicle) {
-  const levels = {};
-
-  Object.keys(data?.performances || {}).forEach(perfName => {
-    if (shouldShowPerfGarage(vehicle, perfName)) {
-      levels[normalizeGarage(perfName)] = Math.max(
-        0,
-        Number(vehicle[perfName + '_level']) || 0
-      );
-    }
-  });
-
-  return levels;
-}
-
-function garagePerformanceChangeCount(cardId) {
-  const pending = pendingGaragePerformanceChanges.get(Number(cardId));
-
-  if (!pending) return 0;
-
-  return Object.keys(pending.savedLevels).filter(perfName =>
-    Number(pending.savedLevels[perfName]) !==
-    Number(pending.draftLevels[perfName] || 0)
-  ).length;
-}
-
-function getGarageVehicleForRender(vehicle) {
-  const pending = pendingGaragePerformanceChanges.get(Number(vehicle?.card_id));
-
-  if (!pending?.draftVehicle) return vehicle;
-
-  return {
-    ...vehicle,
-    ...pending.draftVehicle
-  };
-}
-
-function rememberGaragePerformanceChange(cardId, vehicle) {
-  const numericCardId = Number(cardId);
-
-  if (!pendingGaragePerformanceChanges.has(numericCardId)) {
-    pendingGaragePerformanceChanges.set(numericCardId, {
-      savedLevels: garagePerformanceLevelsForVehicle(vehicle),
-      draftLevels: garagePerformanceLevelsForVehicle(vehicle),
-      draftVehicle: { ...vehicle }
-    });
-  }
-}
-
-function cleanupGaragePerformanceChange(cardId) {
-  if (garagePerformanceChangeCount(cardId) === 0) {
-    pendingGaragePerformanceChanges.delete(Number(cardId));
-  }
-}
-
-function applyGaragePerformanceBatchResult(result) {
-  if (!result || result.type !== 'garage_performance_batch_mutation') {
-    throw new Error('Réponse groupée de sauvegarde des performances invalide.');
-  }
-
-  const vehicle = findGarageVehicle(result.cardId);
-
-  if (!vehicle || !result.performances || typeof result.performances !== 'object') {
-    throw new Error('Réponse groupée de sauvegarde incomplète.');
-  }
-
-  Object.entries(result.performances).forEach(([perfName, performance]) => {
-    vehicle[perfName + '_level'] = Number(performance.level) || 0;
-    vehicle[perfName + '_paid'] = Number(performance.paid) || 0;
-    vehicle[perfName + '_steps'] = JSON.stringify(performance.steps || []);
-  });
-
-  vehicle.depense_total = Number(result.depenseTotal) || 0;
-  if (result.updatedAt) vehicle.updated_at = result.updatedAt;
-  if (result.revisionState) data.revisionState = result.revisionState;
-}
-
-async function saveGarageVehiclePerformances(cardId) {
-  const numericCardId = Number(cardId);
-  const vehicle = findGarageVehicle(numericCardId);
-  const pending = pendingGaragePerformanceChanges.get(numericCardId);
-  const changeCount = garagePerformanceChangeCount(numericCardId);
-
-  if (
-    !vehicle ||
-    !pending ||
-    changeCount === 0 ||
-    savingGaragePerformanceCards.has(numericCardId)
-  ) {
-    return;
-  }
-
-  savingGaragePerformanceCards.add(numericCardId);
-  renderGarage();
-  setError('');
-
-  try {
-    const result = await api('setPerformanceLevels', {
-      cardId: numericCardId,
-      levels: { ...pending.draftLevels },
-      tariffScope: RcpTariff.get(),
-      compact: true
-    }, token);
-
-    applyGaragePerformanceBatchResult(result);
-    pendingGaragePerformanceChanges.delete(numericCardId);
-    saveGarageCache();
-    setError('');
-  } catch (error) {
-    if (isGarageSessionError(error)) {
-      redirectToGarageLogin('Ta session a expiré. Reconnecte-toi.');
-      return;
-    }
-
-    setError(error.message);
-  } finally {
-    savingGaragePerformanceCards.delete(numericCardId);
-    renderGarage();
-  }
-}
-
 function enqueueGaragePerformanceLevelMutation(
   cardId,
   perfName,
@@ -1204,13 +1079,7 @@ function renderVehiclesGarage() {
       ? `Spéciale N°${cardNumber}`
       : `N°${cardNumber}`;
 
-    const renderVehicle = getGarageVehicleForRender(vehicle);
-    const totalPerfs = Object.keys(data?.performances || {})
-      .filter(perfName => shouldShowPerfGarage(renderVehicle, perfName))
-      .reduce(
-        (total, perfName) => total + Math.max(0, Number(renderVehicle[perfName + '_paid']) || 0),
-        0
-      );
+    const totalPerfs = Math.max(0, Number(vehicle.performance_total) || 0);
 
     const div = document.createElement('div');
     div.className =
@@ -1398,14 +1267,14 @@ function renderVehiclesGarage() {
         </div>
       `;
 
-      vehicleHtml += renderPerfsGarage(renderVehicle);
+      vehicleHtml += renderPerfsGarage(vehicle);
     }
 
     vehicleHtml += `
       <div class="expense-box vehicle-expense-box">
         <div class="expense-row"><span>Achat véhicule — ${escapeHtml(vehicle.date_achat || '-')}</span><span>${moneyGarage(vehicle.price_ttc)}</span></div>
         <div class="expense-row"><span>Total perfs</span><span>${moneyGarage(totalPerfs)}</span></div>
-        <div class="expense-row expense-main"><span>Dépense totale</span><span>${moneyGarage(renderVehicle.depense_total)}</span></div>
+        <div class="expense-row expense-main"><span>Dépense totale</span><span>${moneyGarage(vehicle.depense_total)}</span></div>
       </div>
       </div>
     `;
@@ -1463,8 +1332,6 @@ function renderVehiclesGarage() {
 
 function renderPerfsGarage(vehicle) {
   let html = '<div class="perfs">';
-  const pendingCount = garagePerformanceChangeCount(vehicle.card_id);
-  const isSaving = savingGaragePerformanceCards.has(Number(vehicle.card_id));
 
   const entries = Object.entries(data.performances)
     .filter(([perfName]) => shouldShowPerfGarage(vehicle, perfName))
@@ -1512,22 +1379,6 @@ function renderPerfsGarage(vehicle) {
 
     html += '</div>';
   });
-
-  html += `
-    <div class="garage-performance-save-slot">
-      <span class="garage-performance-pending-indicator${pendingCount > 0 ? ' has-pending' : ''}" aria-live="polite">
-        ${pendingCount > 0 ? `${pendingCount} modification${pendingCount > 1 ? 's' : ''} en attente` : 'Aucune modification'}
-      </span>
-      <button
-        type="button"
-        class="garage-performance-save-button${pendingCount > 0 ? ' has-pending' : ''}"
-        ${pendingCount === 0 || isSaving ? 'disabled' : ''}
-        onclick="saveGarageVehiclePerformances(${vehicle.card_id})"
-      >
-        ${isSaving ? 'Enregistrement…' : 'Enregistrer les performances'}
-      </button>
-    </div>
-  `;
 
   html += '</div>';
   return html;
@@ -1669,15 +1520,12 @@ async function updateGarageStatus(cardId, status) {
 }
 
 function togglePerf(cardId, perfName, level, checked) {
-  const savedVehicle = findGarageVehicle(cardId);
+  const vehicle = findGarageVehicle(cardId);
 
-  if (!savedVehicle) {
+  if (!vehicle) {
     setError('Véhicule introuvable dans l’inventaire.');
     return;
   }
-
-  rememberGaragePerformanceChange(cardId, savedVehicle);
-  const vehicle = getGarageVehicleForRender(savedVehicle);
 
   const targetLevel = checked ? Number(level) : Number(level) - 1;
 
@@ -1689,11 +1537,13 @@ function togglePerf(cardId, perfName, level, checked) {
 
   setError('');
   applyOptimisticPerformanceChange(vehicle, perfName, level, checked);
-  const pending = pendingGaragePerformanceChanges.get(Number(cardId));
-  pending.draftLevels = garagePerformanceLevelsForVehicle(vehicle);
-  pending.draftVehicle = { ...vehicle };
-  cleanupGaragePerformanceChange(cardId);
   renderGarage();
+  scheduleGaragePerformanceMutation(
+    cardId,
+    perfName,
+    targetLevel,
+    RcpTariff.get()
+  );
 }
 
 async function handleGarageTariffScopeChange() {
