@@ -615,6 +615,61 @@ button {
   background: var(--section-red);
 }
 
+.garage-performance-save-slot {
+  display: grid;
+  gap: 6px;
+  grid-column: 3;
+  align-self: start;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+}
+
+.garage-performance-pending-indicator {
+  min-height: 20px;
+  padding: 3px 6px;
+  border-left: 1px solid var(--garage-vehicle-border);
+  background: var(--vehicle-card);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.garage-performance-pending-indicator.has-pending {
+  border-left: 2px solid var(--garage-title);
+  background: var(--garage-title);
+  color: #fff;
+}
+
+.garage-performance-save-button {
+  width: 100%;
+  margin: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px dashed var(--garage-vehicle-border);
+  border-radius: 9px;
+  background: var(--vehicle-card);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.garage-performance-save-button.has-pending {
+  border: 2px solid var(--garage-title);
+  background: var(--garage-title);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgb(var(--garage-title-rgb) / .32);
+}
+
+.garage-performance-save-button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .perf-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1503,6 +1558,17 @@ button {
     height: 15px;
   }
 
+  .garage-performance-save-slot {
+    grid-column: 2;
+    margin: 0;
+  }
+
+  .garage-performance-save-button {
+    min-height: 42px;
+    padding: 9px 6px;
+    font-size: 11px;
+  }
+
   .modal-actions {
     grid-template-columns: 1fr;
   }
@@ -1511,6 +1577,10 @@ button {
 @media (max-width: 390px) {
   .garage-page .perfs {
     grid-template-columns: 1fr;
+  }
+
+  .garage-performance-save-slot {
+    grid-column: 1;
   }
 }
 
