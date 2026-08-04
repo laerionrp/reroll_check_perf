@@ -706,10 +706,18 @@ function getPerfLabelGarage(perfName, index, levels) {
 
 function getCurrentPerfPrice(vehicle, perfName, index) {
   const pending = pendingGaragePerformanceChanges.get(Number(vehicle?.card_id));
-  const snapshot = pending?.priceSnapshot?.[normalizeGarage(perfName)];
 
-  if (Array.isArray(snapshot) && Number.isFinite(Number(snapshot[index]))) {
-    return Number(snapshot[index]);
+  if (pending) {
+    const snapshot = pending.priceSnapshot?.[normalizeGarage(perfName)];
+
+    // Pendant un brouillon, les tarifs sont immuables. Ne jamais retomber
+    // sur les *_steps, price_ht ou la formule : ils peuvent refléter un état
+    // intermédiaire et recalculer les montants après un clic.
+    if (!Array.isArray(snapshot)) return 0;
+
+    const snapshotPrice = Number(snapshot[index]);
+
+    return Number.isFinite(snapshotPrice) ? snapshotPrice : 0;
   }
 
   const steps = parseStepsGarage(vehicle[perfName + '_steps']);
@@ -829,9 +837,11 @@ function applyOptimisticPerformanceChange(
       priceDelta += stepPrice;
     }
   } else {
-    const removedPrice = Number(steps[currentLevel - 1]) ||
-      Number(getCurrentPerfPrice(vehicle, perfName, currentLevel - 1)) ||
-      0;
+    const removedPrice = getCurrentPerfPrice(
+      vehicle,
+      perfName,
+      currentLevel - 1
+    );
     steps[currentLevel - 1] = 0;
     priceDelta = -removedPrice;
   }
