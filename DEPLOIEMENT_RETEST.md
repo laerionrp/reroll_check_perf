@@ -30,7 +30,7 @@ pas les fichiers avec une ancienne archive. Avant le push :
 ```bash
 git status
 git diff --check
-git add index.html login.html garage.html settings.html mentions-legales.html manifest.webmanifest favicon.ico css images js README.md DEPLOIEMENT_RETEST.md LICENSE
+git add index.html login.html garage.html settings.html mentions-legales.html manifest.webmanifest favicon.ico css images js tests README.md DEPLOIEMENT_RETEST.md CORRECTIF_TARIFS_BROUILLON.md LICENSE
 git diff --cached --check
 git commit -m "fix(v1.3.4): reconstruction propre catalogue et sauvegarde inventaire"
 git push origin main
@@ -45,6 +45,11 @@ de cache évitent de réutiliser les anciennes réponses Catalogue et Inventaire
 - Inventaire : cocher plusieurs niveaux ou plusieurs performances sur une
   même fiche. Vérifier que les cases changent sans appel serveur immédiat,
   que l’indicateur et le bouton passent dans la teinte de l’en-tête.
+- Comparer le prix d’un palier non acheté entre Contrôle tarif et Inventaire :
+  les deux montants doivent être strictement identiques.
+- Sur une fiche contenant déjà une performance, la décocher puis la recocher
+  avant sauvegarde : son montant historique et la dépense initiale doivent être
+  restaurés exactement.
 - Cliquer sur « Enregistrer les performances » et vérifier que le bouton
   revient dans la teinte du fond, puis recharger la page.
 - Modifier une seconde fiche sans l’enregistrer : son indicateur doit rester
@@ -58,4 +63,5 @@ de cache évitent de réutiliser les anciennes réponses Catalogue et Inventaire
 - Vérifier qu’aucune coche « Aucune correction manuelle » n’apparaît.
 
 Les calculs IG, la TVA à 14 %, les niveaux cumulatifs et les prix historiques
-des performances achetées restent inchangés.
+des performances achetées restent inchangés. Les nouveaux paliers utilisent le
+prix HT actuel de `RCP_VEHICLES`.

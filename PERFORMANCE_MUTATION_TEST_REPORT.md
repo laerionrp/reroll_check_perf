@@ -3,9 +3,12 @@
 ## Comportement livré
 
 - la coche est affichée immédiatement ;
-- les clics rapprochés sur une même performance sont regroupés ;
-- une seule action `setPerformanceLevel` est envoyée pour le niveau final ;
-- les requêtes restent séquentielles ;
-- une erreur provoque une resynchronisation de l’inventaire.
+- les changements d’une fiche restent dans un brouillon local ;
+- une seule action `setPerformanceLevels` enregistre tous ses niveaux finaux ;
+- les paliers déjà achetés conservent leurs montants historiques ;
+- les nouveaux paliers utilisent le prix catalogue actuel ;
+- décocher puis recocher avant sauvegarde restaure exactement l’état initial ;
+- une erreur laisse le brouillon visible pour permettre une nouvelle tentative.
 
-Les calculs, les prix achetés et les règles de véhicules sont conservés.
+Les coefficients, la TVA, les arrondis, les prix achetés et les règles de
+véhicules sont conservés.
