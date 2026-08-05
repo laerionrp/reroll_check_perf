@@ -147,14 +147,19 @@ function saveGarageUiStates(storageKey, states) {
 function restoreGarageViewportAnchor() {
   if (!garageViewportAnchor) return;
 
-  const { element, top } = garageViewportAnchor;
+  const { element, cardId, top, scrollY } = garageViewportAnchor;
+  const currentElement = element.isConnected
+    ? element
+    : cardId
+      ? document.querySelector(`.vehicle[data-card-id="${cardId}"]`)
+      : null;
 
-  if (!element.isConnected) {
-    garageViewportAnchor = null;
+  if (!currentElement) {
+    window.scrollTo(0, scrollY);
     return;
   }
 
-  const offset = element.getBoundingClientRect().top - top;
+  const offset = currentElement.getBoundingClientRect().top - top;
 
   if (Math.abs(offset) > 0.5) {
     window.scrollBy(0, offset);
@@ -191,14 +196,28 @@ function preserveGarageViewportPosition(element, updateState) {
   }
 
   window.cancelAnimationFrame(garageViewportRestoreFrame);
+  const vehicleCard = element.closest?.('.vehicle[data-card-id]') || null;
+  const anchorElement = vehicleCard || element;
+
   garageViewportAnchor = {
-    element,
-    top: element.getBoundingClientRect().top
+    element: anchorElement,
+    cardId: vehicleCard?.dataset.cardId || '',
+    top: anchorElement.getBoundingClientRect().top,
+    scrollY: window.scrollY
   };
 
   updateState();
   restoreGarageViewportAnchor();
   scheduleGarageViewportRestore();
+}
+
+function renderGaragePreservingVehicle(cardId) {
+  const numericCardId = Number(cardId);
+  const vehicleCard = document.querySelector(
+    `.vehicle[data-card-id="${numericCardId}"]`
+  );
+
+  preserveGarageViewportPosition(vehicleCard, renderGarage);
 }
 
 function layoutGarageMasonry(list) {
@@ -686,8 +705,12 @@ function getPerfLabelGarage(perfName, index, levels) {
 function getCurrentPerfPrice(vehicle, perfName, index) {
   const steps = parseStepsGarage(vehicle[perfName + '_steps']);
   const dbPrice = Number(steps[index]) || 0;
+  const savedLevel = Math.max(
+    0,
+    Number(vehicle[perfName + '_level']) || 0
+  );
 
-  if (dbPrice > 0) return dbPrice;
+  if (index < savedLevel && dbPrice > 0) return dbPrice;
 
   const perfLevels = data.performances[perfName] || [];
   const level = perfLevels[index];
@@ -718,7 +741,6 @@ function findGarageVehicle(cardId) {
 
 function buildGaragePerformanceDraft(savedVehicle, draftLevels) {
   const draftVehicle = { ...savedVehicle };
-  let totalPaidDelta = 0;
 
   Object.entries(data?.performances || {}).forEach(([perfName, levels]) => {
     if (!shouldShowPerfGarage(savedVehicle, perfName)) return;
@@ -735,38 +757,54 @@ function buildGaragePerformanceDraft(savedVehicle, draftLevels) {
     const savedSteps = parseStepsGarage(
       savedVehicle[perfName + '_steps']
     );
-    const nextSteps = savedSteps.slice();
-
-    for (let index = targetLevel; index < nextSteps.length; index += 1) {
-      nextSteps[index] = 0;
-    }
-
-    for (let index = savedLevel; index < targetLevel; index += 1) {
-      nextSteps[index] = getCurrentPerfPrice(
-        savedVehicle,
-        perfName,
-        index
-      );
-    }
-
-    const nextPaid = nextSteps.reduce(
-      (total, step) => total + Math.max(0, Number(step) || 0),
-      0
-    );
     const savedPaid = Math.max(
       0,
       Number(savedVehicle[perfName + '_paid']) || 0
     );
+    const nextSteps = savedSteps.slice(0, savedLevel);
+    let nextPaid = savedPaid;
 
-    totalPaidDelta += nextPaid - savedPaid;
+    if (targetLevel < savedLevel) {
+      const removedPaid = savedSteps
+        .slice(targetLevel, savedLevel)
+        .reduce(
+          (total, step) => total + Math.max(0, Number(step) || 0),
+          0
+        );
+
+      nextSteps.length = targetLevel;
+      nextPaid = Math.max(0, savedPaid - removedPaid);
+    } else {
+      for (let index = savedLevel; index < targetLevel; index += 1) {
+        const stepPrice = getCurrentPerfPrice(
+          savedVehicle,
+          perfName,
+          index
+        );
+
+        nextSteps[index] = stepPrice;
+        nextPaid += stepPrice;
+      }
+    }
+
     draftVehicle[perfName + '_level'] = targetLevel;
     draftVehicle[perfName + '_paid'] = nextPaid;
     draftVehicle[perfName + '_steps'] = JSON.stringify(nextSteps);
   });
 
+  const draftPerformanceTotal = Object.keys(data?.performances || {})
+    .filter(perfName => shouldShowPerfGarage(savedVehicle, perfName))
+    .reduce(
+      (total, perfName) => total + Math.max(
+        0,
+        Number(draftVehicle[perfName + '_paid']) || 0
+      ),
+      0
+    );
+
   draftVehicle.depense_total = Math.max(
     0,
-    (Number(savedVehicle.depense_total) || 0) + totalPaidDelta
+    (Number(savedVehicle.price_ttc) || 0) + draftPerformanceTotal
   );
 
   return draftVehicle;
@@ -930,7 +968,7 @@ async function saveGarageVehiclePerformances(cardId) {
   }
 
   savingGaragePerformanceCards.add(numericCardId);
-  renderGarage();
+  renderGaragePreservingVehicle(numericCardId);
   setError('');
 
   try {
@@ -954,7 +992,7 @@ async function saveGarageVehiclePerformances(cardId) {
     setError(error.message);
   } finally {
     savingGaragePerformanceCards.delete(numericCardId);
-    renderGarage();
+    renderGaragePreservingVehicle(numericCardId);
   }
 }
 
@@ -1237,6 +1275,7 @@ function renderVehiclesGarage() {
       );
 
     const div = document.createElement('div');
+    div.dataset.cardId = String(vehicle.card_id);
     div.className =
       'vehicle' +
       (archived ? ' sold archived' : '') +
@@ -1422,7 +1461,7 @@ function renderVehiclesGarage() {
         </div>
       `;
 
-      vehicleHtml += renderPerfsGarage(renderVehicle);
+      vehicleHtml += renderPerfsGarage(renderVehicle, vehicle);
     }
 
     vehicleHtml += `
@@ -1485,7 +1524,7 @@ function renderVehiclesGarage() {
   scheduleGarageMasonry();
 }
 
-function renderPerfsGarage(vehicle) {
+function renderPerfsGarage(vehicle, savedVehicle = vehicle) {
   let html = '<div class="perfs">';
   const pendingCount = garagePerformanceChangeCount(vehicle.card_id);
   const isSaving = savingGaragePerformanceCards.has(Number(vehicle.card_id));
@@ -1516,7 +1555,7 @@ function renderPerfsGarage(vehicle) {
       const checked = current >= lvl ? 'checked' : '';
       const canChange = lvl === current || lvl === current + 1;
       const disabled = canChange ? '' : 'disabled';
-      const price = getCurrentPerfPrice(vehicle, perfName, index);
+      const price = getCurrentPerfPrice(savedVehicle, perfName, index);
 
       html += `
         <label class="perf-row">
@@ -1717,7 +1756,7 @@ function togglePerf(cardId, perfName, level, checked) {
     pending.draftLevels
   );
   cleanupGaragePerformanceChange(cardId);
-  renderGarage();
+  renderGaragePreservingVehicle(cardId);
 }
 
 async function handleGarageTariffScopeChange() {
