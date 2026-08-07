@@ -1396,6 +1396,7 @@ function renderVehiclesGarage() {
       (archived ? ' sold archived' : '') +
       (collapsed ? ' collapsed' : '') +
       (optionsOpen ? ' options-open' : '');
+    div.dataset.cardId = String(vehicle.card_id);
 
     let vehicleHtml = `
       <div
