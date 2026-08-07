@@ -147,19 +147,14 @@ function saveGarageUiStates(storageKey, states) {
 function restoreGarageViewportAnchor() {
   if (!garageViewportAnchor) return;
 
-  const { element, cardId, top, scrollY } = garageViewportAnchor;
-  const currentElement = element.isConnected
-    ? element
-    : cardId
-      ? document.querySelector(`.vehicle[data-card-id="${cardId}"]`)
-      : null;
+  const { element, top } = garageViewportAnchor;
 
-  if (!currentElement) {
-    window.scrollTo(0, scrollY);
+  if (!element.isConnected) {
+    garageViewportAnchor = null;
     return;
   }
 
-  const offset = currentElement.getBoundingClientRect().top - top;
+  const offset = element.getBoundingClientRect().top - top;
 
   if (Math.abs(offset) > 0.5) {
     window.scrollBy(0, offset);
@@ -196,28 +191,14 @@ function preserveGarageViewportPosition(element, updateState) {
   }
 
   window.cancelAnimationFrame(garageViewportRestoreFrame);
-  const vehicleCard = element.closest?.('.vehicle[data-card-id]') || null;
-  const anchorElement = vehicleCard || element;
-
   garageViewportAnchor = {
-    element: anchorElement,
-    cardId: vehicleCard?.dataset.cardId || '',
-    top: anchorElement.getBoundingClientRect().top,
-    scrollY: window.scrollY
+    element,
+    top: element.getBoundingClientRect().top
   };
 
   updateState();
   restoreGarageViewportAnchor();
   scheduleGarageViewportRestore();
-}
-
-function renderGaragePreservingVehicle(cardId) {
-  const numericCardId = Number(cardId);
-  const vehicleCard = document.querySelector(
-    `.vehicle[data-card-id="${numericCardId}"]:not(.archived)`
-  );
-
-  preserveGarageViewportPosition(vehicleCard, renderGarage);
 }
 
 function layoutGarageMasonry(list) {
@@ -257,6 +238,22 @@ function scheduleGarageMasonry() {
       layoutGarageMasonry
     );
     restoreGarageViewportAnchor();
+  });
+}
+
+function renderGaragePreservingScroll() {
+  const scrollY = window.scrollY;
+  const scrollX = window.scrollX;
+
+  renderGarage();
+
+  const restore = () => {
+    window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
+  };
+
+  window.requestAnimationFrame(() => {
+    restore();
+    window.requestAnimationFrame(restore);
   });
 }
 
@@ -703,113 +700,103 @@ function getPerfLabelGarage(perfName, index, levels) {
 }
 
 function getCurrentPerfPrice(vehicle, perfName, index) {
+  const pending = pendingGaragePerformanceChanges.get(Number(vehicle?.card_id));
+  const snapshot = pending?.tariffSnapshot?.[normalizeGarage(perfName)];
+
+  if (snapshot && Object.prototype.hasOwnProperty.call(snapshot, index)) {
+    return Number(snapshot[index]) || 0;
+  }
+
   const steps = parseStepsGarage(vehicle[perfName + '_steps']);
   const dbPrice = Number(steps[index]) || 0;
-  const savedLevel = Math.max(
-    0,
-    Number(vehicle[perfName + '_level']) || 0
-  );
 
-  if (index < savedLevel && dbPrice > 0) return dbPrice;
+  if (dbPrice > 0) return dbPrice;
 
   const perfLevels = data.performances[perfName] || [];
   const level = perfLevels[index];
 
   if (!level) return 0;
 
-  const catalogVehicleId = String(
-    vehicle.catalog_vehicle_id || vehicle.vehicle_id || ''
-  );
-  const catalogVehicle = data.catalog.find(item =>
-    String(item.vehicle_id || '') === catalogVehicleId
-  );
-
-  if (!catalogVehicle) return 0;
-
   return calculatePerformancePrice(
-    Number(catalogVehicle.price),
+    Number(vehicle.price_ht),
     level.percent,
     data.tvaPerf
   );
 }
 
+function createGaragePerformanceTariffSnapshot(vehicle) {
+  const snapshot = {};
+
+  Object.entries(data?.performances || {}).forEach(([perfName, levels]) => {
+    if (!shouldShowPerfGarage(vehicle, perfName)) return;
+
+    const steps = parseStepsGarage(vehicle[perfName + '_steps']);
+    snapshot[normalizeGarage(perfName)] = Object.freeze(
+      levels.map((level, index) => {
+        const recordedPrice = Number(steps[index]) || 0;
+
+        if (recordedPrice > 0) return recordedPrice;
+        if (!level) return 0;
+
+        return calculatePerformancePrice(
+          Number(vehicle.price_ht),
+          level.percent,
+          data.tvaPerf
+        );
+      })
+    );
+  });
+
+  return Object.freeze(snapshot);
+}
+
 function findGarageVehicle(cardId) {
   return data?.vehicles?.find(
-    vehicle =>
-      Number(vehicle.card_id) === Number(cardId) &&
-      !isGarageVehicleArchived(vehicle)
+    vehicle => Number(vehicle.card_id) === Number(cardId)
   ) || null;
 }
 
-function buildGaragePerformanceDraft(savedVehicle, draftLevels) {
-  const draftVehicle = { ...savedVehicle };
-
-  Object.entries(data?.performances || {}).forEach(([perfName, levels]) => {
-    if (!shouldShowPerfGarage(savedVehicle, perfName)) return;
-
-    const normalizedPerfName = normalizeGarage(perfName);
-    const savedLevel = Math.max(
-      0,
-      Number(savedVehicle[perfName + '_level']) || 0
-    );
-    const targetLevel = Math.max(
-      0,
-      Number(draftLevels[normalizedPerfName]) || 0
-    );
-    const savedSteps = parseStepsGarage(
-      savedVehicle[perfName + '_steps']
-    );
-    const savedPaid = Math.max(
-      0,
-      Number(savedVehicle[perfName + '_paid']) || 0
-    );
-    const nextSteps = savedSteps.slice(0, savedLevel);
-    let nextPaid = savedPaid;
-
-    if (targetLevel < savedLevel) {
-      const removedPaid = savedSteps
-        .slice(targetLevel, savedLevel)
-        .reduce(
-          (total, step) => total + Math.max(0, Number(step) || 0),
-          0
-        );
-
-      nextSteps.length = targetLevel;
-      nextPaid = Math.max(0, savedPaid - removedPaid);
-    } else {
-      for (let index = savedLevel; index < targetLevel; index += 1) {
-        const stepPrice = getCurrentPerfPrice(
-          savedVehicle,
-          perfName,
-          index
-        );
-
-        nextSteps[index] = stepPrice;
-        nextPaid += stepPrice;
-      }
-    }
-
-    draftVehicle[perfName + '_level'] = targetLevel;
-    draftVehicle[perfName + '_paid'] = nextPaid;
-    draftVehicle[perfName + '_steps'] = JSON.stringify(nextSteps);
-  });
-
-  const draftPerformanceTotal = Object.keys(data?.performances || {})
-    .filter(perfName => shouldShowPerfGarage(savedVehicle, perfName))
-    .reduce(
-      (total, perfName) => total + Math.max(
-        0,
-        Number(draftVehicle[perfName + '_paid']) || 0
-      ),
-      0
-    );
-
-  draftVehicle.depense_total = Math.max(
+function applyOptimisticPerformanceChange(
+  vehicle,
+  perfName,
+  level,
+  checked
+) {
+  const currentLevel = Math.max(
     0,
-    (Number(savedVehicle.price_ttc) || 0) + draftPerformanceTotal
+    Number(vehicle[perfName + '_level']) || 0
   );
+  const targetLevel = checked ? Number(level) : Number(level) - 1;
+  const steps = parseStepsGarage(vehicle[perfName + '_steps']);
 
-  return draftVehicle;
+  if (!Number.isInteger(targetLevel) || targetLevel < 0) return;
+
+  let priceDelta = 0;
+
+  if (checked) {
+    for (let index = currentLevel; index < targetLevel; index += 1) {
+      const stepPrice = getCurrentPerfPrice(vehicle, perfName, index);
+      steps[index] = stepPrice;
+      priceDelta += stepPrice;
+    }
+  } else {
+    const removedPrice =
+      Number(steps[currentLevel - 1]) ||
+      getCurrentPerfPrice(vehicle, perfName, currentLevel - 1);
+    steps[currentLevel - 1] = 0;
+    priceDelta = -removedPrice;
+  }
+
+  vehicle[perfName + '_level'] = targetLevel;
+  vehicle[perfName + '_paid'] = Math.max(
+    0,
+    (Number(vehicle[perfName + '_paid']) || 0) + priceDelta
+  );
+  vehicle[perfName + '_steps'] = JSON.stringify(steps);
+  vehicle.depense_total = Math.max(
+    0,
+    (Number(vehicle.depense_total) || 0) + priceDelta
+  );
 }
 
 function applyGaragePerformanceMutationResult(result) {
@@ -921,6 +908,7 @@ function rememberGaragePerformanceChange(cardId, vehicle) {
     pendingGaragePerformanceChanges.set(numericCardId, {
       savedLevels: garagePerformanceLevelsForVehicle(vehicle),
       draftLevels: garagePerformanceLevelsForVehicle(vehicle),
+      tariffSnapshot: createGaragePerformanceTariffSnapshot(vehicle),
       draftVehicle: { ...vehicle }
     });
   }
@@ -970,7 +958,7 @@ async function saveGarageVehiclePerformances(cardId) {
   }
 
   savingGaragePerformanceCards.add(numericCardId);
-  renderGaragePreservingVehicle(numericCardId);
+  renderGaragePreservingScroll();
   setError('');
 
   try {
@@ -994,7 +982,7 @@ async function saveGarageVehiclePerformances(cardId) {
     setError(error.message);
   } finally {
     savingGaragePerformanceCards.delete(numericCardId);
-    renderGaragePreservingVehicle(numericCardId);
+    renderGaragePreservingScroll();
   }
 }
 
@@ -1277,7 +1265,6 @@ function renderVehiclesGarage() {
       );
 
     const div = document.createElement('div');
-    div.dataset.cardId = String(vehicle.card_id);
     div.className =
       'vehicle' +
       (archived ? ' sold archived' : '') +
@@ -1463,7 +1450,7 @@ function renderVehiclesGarage() {
         </div>
       `;
 
-      vehicleHtml += renderPerfsGarage(renderVehicle, vehicle);
+      vehicleHtml += renderPerfsGarage(renderVehicle);
     }
 
     vehicleHtml += `
@@ -1526,7 +1513,7 @@ function renderVehiclesGarage() {
   scheduleGarageMasonry();
 }
 
-function renderPerfsGarage(vehicle, savedVehicle = vehicle) {
+function renderPerfsGarage(vehicle) {
   let html = '<div class="perfs">';
   const pendingCount = garagePerformanceChangeCount(vehicle.card_id);
   const isSaving = savingGaragePerformanceCards.has(Number(vehicle.card_id));
@@ -1546,10 +1533,35 @@ function renderPerfsGarage(vehicle, savedVehicle = vehicle) {
 
   if (entries.length === 0) return '';
 
+  let saveSlotRendered = false;
+
+  const renderPerformanceSaveSlot = () => {
+    const pendingMessage = pendingCount > 0
+      ? `<span class="garage-performance-pending-indicator has-pending" aria-live="polite">
+          ${pendingCount} | ${pendingCount > 1 ? 'modifications' : 'modification'} en attente
+        </span>`
+      : '';
+
+    return `
+      <div class="garage-performance-save-slot">
+        ${pendingMessage}
+        <button
+          type="button"
+          class="garage-performance-save-button${pendingCount > 0 ? ' has-pending' : ''}"
+          ${pendingCount === 0 || isSaving ? 'disabled' : ''}
+          onclick="saveGarageVehiclePerformances(${vehicle.card_id})"
+        >
+          ${isSaving ? 'Enregistrement…' : 'Enregistrer les performances'}
+        </button>
+      </div>
+    `;
+  };
+
   entries.forEach(([perfName, levels]) => {
     const current = Number(vehicle[perfName + '_level']) || 0;
-
-    html += `<div class="perf"><h4>${escapeHtml(levels?.[0]?.performance_label || perfName)}</h4>`;
+    const perfHtml = [
+      `<div class="perf"><h4>${escapeHtml(levels?.[0]?.performance_label || perfName)}</h4>`
+    ];
 
     levels.forEach((level, index) => {
       const lvl = index + 1;
@@ -1557,9 +1569,9 @@ function renderPerfsGarage(vehicle, savedVehicle = vehicle) {
       const checked = current >= lvl ? 'checked' : '';
       const canChange = lvl === current || lvl === current + 1;
       const disabled = canChange ? '' : 'disabled';
-      const price = getCurrentPerfPrice(savedVehicle, perfName, index);
+      const price = getCurrentPerfPrice(vehicle, perfName, index);
 
-      html += `
+      perfHtml.push(`
         <label class="perf-row">
           <span>
             <input
@@ -1572,27 +1584,25 @@ function renderPerfsGarage(vehicle, savedVehicle = vehicle) {
           </span>
           <span>${moneyGarage(price)}</span>
         </label>
-      `;
+      `);
     });
 
-    html += '</div>';
+    perfHtml.push('</div>');
+    const isTurbo = normalizeGarage(perfName) === 'turbo';
+
+    html += isTurbo
+      ? `<div class="garage-performance-column">${perfHtml.join('')}`
+      : perfHtml.join('');
+
+    if (isTurbo) {
+      saveSlotRendered = true;
+      html += `${renderPerformanceSaveSlot()}</div>`;
+    }
   });
 
-  html += `
-    <div class="garage-performance-save-slot">
-      <span class="garage-performance-pending-indicator${pendingCount > 0 ? ' has-pending' : ''}" aria-live="polite">
-        ${pendingCount > 0 ? `${pendingCount} modification${pendingCount > 1 ? 's' : ''} en attente` : 'Aucune modification'}
-      </span>
-      <button
-        type="button"
-        class="garage-performance-save-button${pendingCount > 0 ? ' has-pending' : ''}"
-        ${pendingCount === 0 || isSaving ? 'disabled' : ''}
-        onclick="saveGarageVehiclePerformances(${vehicle.card_id})"
-      >
-        ${isSaving ? 'Enregistrement…' : 'Enregistrer les performances'}
-      </button>
-    </div>
-  `;
+  if (!saveSlotRendered) {
+    html += renderPerformanceSaveSlot();
+  }
 
   html += '</div>';
   return html;
@@ -1742,23 +1752,23 @@ function togglePerf(cardId, perfName, level, checked) {
   }
 
   rememberGaragePerformanceChange(cardId, savedVehicle);
+  const vehicle = getGarageVehicleForRender(savedVehicle);
+
   const targetLevel = checked ? Number(level) : Number(level) - 1;
 
   if (!Number.isInteger(targetLevel) || targetLevel < 0) {
     setError('Niveau de performance invalide.');
-    renderGarage();
+    renderGaragePreservingScroll();
     return;
   }
 
   setError('');
+  applyOptimisticPerformanceChange(vehicle, perfName, level, checked);
   const pending = pendingGaragePerformanceChanges.get(Number(cardId));
-  pending.draftLevels[normalizeGarage(perfName)] = targetLevel;
-  pending.draftVehicle = buildGaragePerformanceDraft(
-    savedVehicle,
-    pending.draftLevels
-  );
+  pending.draftLevels = garagePerformanceLevelsForVehicle(vehicle);
+  pending.draftVehicle = { ...vehicle };
   cleanupGaragePerformanceChange(cardId);
-  renderGaragePreservingVehicle(cardId);
+  renderGaragePreservingScroll();
 }
 
 async function handleGarageTariffScopeChange() {

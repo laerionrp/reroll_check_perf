@@ -166,6 +166,7 @@ body.garage-page.light {
 
 .garage-page .garage-vehicle-section .vehicle {
   --garage-card-accent: var(--garage-section-accent);
+  --garage-card-accent-rgb: var(--garage-section-accent-rgb);
   --border: rgb(var(--garage-section-accent-rgb) / .62);
   --accent: var(--garage-section-accent);
   --accent-red: var(--garage-section-accent);
@@ -615,10 +616,19 @@ button {
   background: var(--section-red);
 }
 
+.garage-performance-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  align-self: start;
+  min-width: 0;
+}
+
 .garage-performance-save-slot {
-  display: grid;
-  gap: 6px;
-  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   align-self: start;
   min-width: 0;
   width: 100%;
@@ -626,43 +636,38 @@ button {
 }
 
 .garage-performance-pending-indicator {
-  min-height: 20px;
-  padding: 3px 6px;
-  border-left: 1px solid var(--garage-vehicle-border);
-  background: var(--vehicle-card);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
+  padding: 0 2px;
+  color: var(--garage-text, #fff);
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.2;
   text-align: center;
 }
 
 .garage-performance-pending-indicator.has-pending {
-  border-left: 2px solid var(--garage-title);
-  background: var(--garage-title);
-  color: #fff;
+  color: var(--garage-text, #fff);
 }
 
 .garage-performance-save-button {
   width: 100%;
   margin: 0;
-  min-height: 44px;
+  min-height: 46px;
   padding: 10px 12px;
-  border: 1px dashed var(--garage-vehicle-border);
+  border: 2px dashed var(--garage-card-accent, var(--garage-title));
   border-radius: 9px;
   background: var(--vehicle-card);
-  color: var(--muted);
+  color: var(--garage-card-accent, var(--garage-title));
   font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
 }
 
 .garage-performance-save-button.has-pending {
-  border: 2px solid var(--garage-title);
-  background: var(--garage-title);
+  border: 2px solid var(--garage-card-accent, var(--garage-title));
+  background: var(--garage-card-accent, var(--garage-title));
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgb(var(--garage-title-rgb) / .32);
+  box-shadow: 0 0 0 1px rgb(var(--garage-card-accent-rgb, var(--garage-title-rgb)) / .42);
 }
 
 .garage-performance-save-button:disabled {
@@ -1559,12 +1564,11 @@ button {
   }
 
   .garage-performance-save-slot {
-    grid-column: 2;
     margin: 0;
   }
 
   .garage-performance-save-button {
-    min-height: 42px;
+    min-height: 44px;
     padding: 9px 6px;
     font-size: 11px;
   }
@@ -1580,7 +1584,7 @@ button {
   }
 
   .garage-performance-save-slot {
-    grid-column: 1;
+    margin: 0;
   }
 }
 
