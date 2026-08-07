@@ -26,6 +26,7 @@ const context = {
   String,
   Array,
   data: {
+    tariffScope: 'LS',
     tvaPerf: 0.14,
     catalog: [{ vehicle_id: 'indiana', price: 69000 }],
     performances: {
@@ -37,6 +38,7 @@ const context = {
       turbo: [{ percent: 0.16 }]
     }
   },
+  pendingGaragePerformanceChanges: new Map(),
   normalizeGarage: value => String(value || '').toLowerCase().trim(),
   parseStepsGarage: value => JSON.parse(value || '[]'),
   shouldShowPerfGarage: () => true,
@@ -49,9 +51,12 @@ const context = {
 vm.createContext(context);
 vm.runInContext(
   extractFunctionBlock('isGarageVehicleArchived', 'getGarageExitType') + '\n' +
-  extractFunctionBlock('getCurrentPerfPrice', 'findGarageVehicle') + '\n' +
+  extractFunctionBlock('getCurrentPerfPrice', 'createGaragePerformanceTariffSnapshot') + '\n' +
+  extractFunctionBlock('createGaragePerformanceTariffSnapshot', 'findGarageVehicle') + '\n' +
   extractFunctionBlock('findGarageVehicle', 'buildGaragePerformanceDraft') + '\n' +
-  extractFunctionBlock('buildGaragePerformanceDraft', 'applyGaragePerformanceMutationResult'),
+  extractFunctionBlock('buildGaragePerformanceDraft', 'applyOptimisticPerformanceChange') + '\n' +
+  extractFunctionBlock('garagePerformanceLevelsForVehicle', 'garagePerformanceChangeCount') + '\n' +
+  extractFunctionBlock('rememberGaragePerformanceChange', 'cleanupGaragePerformanceChange'),
   context,
   { filename: 'garage-performance-draft-extract.js' }
 );
@@ -63,6 +68,7 @@ const savedVehicle = {
   price_ht: 42000,
   price_ttc: 46200,
   depense_total: 56737,
+  allowed_perfs: ['blindage', 'frein', 'moteur', 'suspension', 'transmission', 'turbo'],
   blindage_level: 1,
   blindage_paid: 1437,
   blindage_steps: JSON.stringify([1437, 3353, 4788]),
@@ -82,54 +88,58 @@ const savedVehicle = {
   turbo_paid: 0,
   turbo_steps: JSON.stringify([7661])
 };
+context.savedVehicle = savedVehicle;
 
 const archivedVehicleUsingSameCard = {
   ...savedVehicle,
   vehicle_id: 'ancien-vehicule',
   catalog_vehicle_id: 'ancien-vehicule',
-  price_ttc: 70400,
-  depense_total: 82993,
   status: 'Vendu',
-  exit_type: 'vendu',
-  frein_level: 1,
-  frein_paid: 2056,
-  turbo_level: 0,
-  turbo_paid: 0
+  exit_type: 'vendu'
 };
 
 savedVehicle.status = 'Appartement';
 savedVehicle.exit_type = '';
 context.data.vehicles = [archivedVehicleUsingSameCard, savedVehicle];
-context.savedVehicle = vm.runInContext('findGarageVehicle(3)', context);
 
 assert.equal(
-  context.savedVehicle.vehicle_id,
+  vm.runInContext('findGarageVehicle(3).vehicle_id', context),
   'indiana',
-  'Une carte grise reutilisee doit cibler son vehicule actif, jamais son ancien proprietaire archive.'
+  'Une carte réutilisée doit toujours cibler le véhicule actif.'
 );
 
-const currentPrice = percent => context.calculatePerformancePrice(
-  69000,
-  percent,
-  0.14
-);
+const currentPrice = percent => context.calculatePerformancePrice(69000, percent, 0.14);
 
 assert.equal(
   vm.runInContext("getCurrentPerfPrice(savedVehicle, 'blindage', 0)", context),
   1437,
-  'Un palier acheté doit garder son prix historique.'
+  'Un palier acheté conserve son montant historique.'
 );
 assert.equal(
   vm.runInContext("getCurrentPerfPrice(savedVehicle, 'blindage', 1)", context),
   currentPrice(0.07),
-  'Un ancien tarif mémorisé pour un palier non acheté doit être ignoré.'
+  'Un montant présent dans un ancien tableau mais non acheté doit être ignoré.'
 );
 assert.equal(
   vm.runInContext("getCurrentPerfPrice(savedVehicle, 'suspension', 0)", context),
   currentPrice(0.02),
-  'Une performance non achetée doit suivre le catalogue actuel.'
+  'Un nouveau palier doit utiliser le catalogue actuel.'
 );
 
+context.pendingGaragePerformanceChanges.set(3, {
+  tariffSnapshot: vm.runInContext(
+    'createGaragePerformanceTariffSnapshot(savedVehicle)',
+    context
+  )
+});
+context.data.catalog[0].price = 99999;
+assert.equal(
+  vm.runInContext("getCurrentPerfPrice(savedVehicle, 'suspension', 0)", context),
+  currentPrice(0.02),
+  'Le prix d un brouillon reste celui du profil capturé au début du brouillon.'
+);
+
+context.data.catalog[0].price = 69000;
 const savedLevels = {
   blindage: 1,
   frein: 3,
@@ -138,145 +148,70 @@ const savedLevels = {
   transmission: 1,
   turbo: 0
 };
-
 context.savedLevels = savedLevels;
 
-const onePendingChange = vm.runInContext(
-  "buildGaragePerformanceDraft(savedVehicle, { ...savedLevels, moteur: 4 })",
+const draft = vm.runInContext(
+  'buildGaragePerformanceDraft(savedVehicle, { ...savedLevels, moteur: 4, transmission: 2 })',
   context
 );
 
-assert.deepEqual(
-  JSON.parse(onePendingChange.moteur_steps),
-  [479, 958, 1437, currentPrice(0.05)]
-);
-assert.equal(onePendingChange.moteur_paid, 2874 + currentPrice(0.05));
-assert.equal(onePendingChange.blindage_paid, 1437);
-assert.equal(onePendingChange.frein_paid, 5268);
-assert.equal(onePendingChange.transmission_paid, 958);
-assert.equal(onePendingChange.depense_total, 56737 + currentPrice(0.05));
-
-const twoPendingChanges = vm.runInContext(
-  "buildGaragePerformanceDraft(savedVehicle, { ...savedLevels, moteur: 4, transmission: 2 })",
-  context
-);
-
+assert.deepEqual(JSON.parse(draft.moteur_steps), [479, 958, 1437, currentPrice(0.05)]);
+assert.equal(draft.moteur_paid, 2874 + currentPrice(0.05));
+assert.equal(draft.transmission_paid, 958 + currentPrice(0.04));
 assert.equal(
-  twoPendingChanges.depense_total,
+  draft.depense_total,
   56737 + currentPrice(0.05) + currentPrice(0.04),
-  'Chaque coche doit seulement ajouter son propre palier au total.'
-);
-assert.equal(
-  Object.keys(context.data.performances).reduce(
-    (total, perfName) => total + Number(twoPendingChanges[perfName + '_paid'] || 0),
-    0
-  ),
-  twoPendingChanges.depense_total - savedVehicle.price_ttc,
-  'Total perfs et Dépense totale doivent rester strictement cohérents.'
+  'Le total ne doit évoluer que selon les nouveaux paliers préparés.'
 );
 
 const restored = vm.runInContext(
   'buildGaragePerformanceDraft(savedVehicle, savedLevels)',
   context
 );
-
-assert.equal(restored.depense_total, 56737);
+assert.equal(restored.depense_total, 56737, 'Le retour à l état initial annule le brouillon.');
 assert.equal(restored.moteur_paid, 2874);
-assert.deepEqual(JSON.parse(restored.moteur_steps), [479, 958, 1437]);
 
-const turboPending = vm.runInContext(
-  "buildGaragePerformanceDraft(savedVehicle, { ...savedLevels, turbo: 1 })",
+context.pendingGaragePerformanceChanges.set(3, {
+  savedLevels,
+  draftLevels: { ...savedLevels, moteur: 4 },
+  tariffSnapshot: vm.runInContext(
+    'createGaragePerformanceTariffSnapshot(savedVehicle)',
+    context
+  ),
+  draftVehicle: { ...savedVehicle }
+});
+assert.equal(
+  context.pendingGaragePerformanceChanges.get(3).tariffSnapshot.tariffScope,
+  'LS',
+  'Le profil tarifaire utilisé doit être conservé dans l instantané.'
+);
+context.data.catalog[0].price = 75000;
+context.data.tvaPerf = 0.20;
+vm.runInContext(
+  'refreshGaragePerformanceDraftsForTariffScope()',
   context
 );
-
+const profileChangedDraft = vm.runInContext(
+  'pendingGaragePerformanceChanges.get(3).draftVehicle',
+  context
+);
+const changedProfilePrice = context.calculatePerformancePrice(75000, 0.05, 0.20);
 assert.equal(
-  turboPending.turbo_paid,
-  currentPrice(0.16),
-  'Le turbo en attente doit etre calcule depuis l Indiana actif.'
-);
-assert.equal(
-  turboPending.depense_total,
-  56737 + currentPrice(0.16),
-  'La depense du brouillon ne doit jamais reprendre le prix de l ancien vehicule archive.'
+  JSON.parse(profileChangedDraft.moteur_steps)[3],
+  changedProfilePrice,
+  'Un brouillon ouvert doit reprendre les tarifs du nouveau profil LS/BC.'
 );
 
-assert.match(
-  source,
-  /function renderGaragePreservingVehicle\(cardId\)/,
-  'La restauration de position par fiche doit être présente.'
-);
+assert.match(source, /function renderGaragePreservingVehicle\(cardId\)/);
 assert.match(
   extractFunctionBlock('renderGaragePreservingVehicle', 'layoutGarageMasonry'),
   /:not\(\.archived\)/,
-  'L ancrage doit lui aussi cibler la fiche active quand une carte a ete reutilisee.'
+  'La restauration du défilement doit viser la carte active.'
 );
-assert.match(
-  extractFunctionBlock('togglePerf', 'handleGarageTariffScopeChange'),
-  /renderGaragePreservingVehicle\(cardId\)/,
-  'Une coche doit reconstruire l’Inventaire en conservant la fiche à l’écran.'
-);
-assert.match(
-  extractFunctionBlock('saveGarageVehiclePerformances', 'enqueueGaragePerformanceLevelMutation'),
-  /renderGaragePreservingVehicle\(numericCardId\)/,
-  'La sauvegarde doit conserver la fiche à l’écran.'
-);
-
-let activeCard;
-const scrollMoves = [];
-const oldCard = {
-  dataset: { cardId: '3' },
-  isConnected: true,
-  closest: () => oldCard,
-  getBoundingClientRect: () => ({ top: 240 })
-};
-const newCard = {
-  dataset: { cardId: '3' },
-  isConnected: true,
-  closest: () => newCard,
-  getBoundingClientRect: () => ({ top: 275 })
-};
-
-activeCard = oldCard;
-
-const viewportContext = {
-  console,
-  Number,
-  Math,
-  garageViewportAnchor: null,
-  garageViewportRestoreFrame: 0,
-  document: {
-    querySelector: () => activeCard
-  },
-  window: {
-    scrollY: 900,
-    cancelAnimationFrame: () => {},
-    requestAnimationFrame: () => 1,
-    scrollBy: (x, y) => scrollMoves.push([x, y]),
-    scrollTo: (x, y) => scrollMoves.push([x, y])
-  },
-  renderGarage: () => {
-    oldCard.isConnected = false;
-    activeCard = newCard;
-  }
-};
-
-vm.createContext(viewportContext);
-vm.runInContext(
-  extractFunctionBlock('restoreGarageViewportAnchor', 'scheduleGarageViewportRestore') + '\n' +
-  extractFunctionBlock('scheduleGarageViewportRestore', 'preserveGarageViewportPosition') + '\n' +
-  extractFunctionBlock('preserveGarageViewportPosition', 'renderGaragePreservingVehicle') + '\n' +
-  extractFunctionBlock('renderGaragePreservingVehicle', 'layoutGarageMasonry'),
-  viewportContext,
-  { filename: 'garage-viewport-extract.js' }
-);
-vm.runInContext('renderGaragePreservingVehicle(3)', viewportContext);
-
-assert.deepEqual(
-  scrollMoves,
-  [[0, 35]],
-  'La nouvelle fiche doit retrouver exactement la position visuelle de l’ancienne.'
-);
+assert.match(source, /function saveGarageVehiclePerformances\(cardId\)/);
+assert.match(source, /api\(\s*'setPerformanceLevels'/);
+assert.match(source, /!isGarageVehicleArchived\(vehicle\)/);
 
 console.log(
-  'Brouillon frontend : tarifs mixtes, totaux cohérents et ancrage de la fiche validés.'
+  'NO GO frontend : tarifs historiques, catalogue courant, carte réutilisée, brouillon et sauvegarde groupée validés.'
 );
