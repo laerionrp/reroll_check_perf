@@ -48,7 +48,9 @@ const context = {
 
 vm.createContext(context);
 vm.runInContext(
+  extractFunctionBlock('isGarageVehicleArchived', 'getGarageExitType') + '\n' +
   extractFunctionBlock('getCurrentPerfPrice', 'findGarageVehicle') + '\n' +
+  extractFunctionBlock('findGarageVehicle', 'buildGaragePerformanceDraft') + '\n' +
   extractFunctionBlock('buildGaragePerformanceDraft', 'applyGaragePerformanceMutationResult'),
   context,
   { filename: 'garage-performance-draft-extract.js' }
@@ -81,7 +83,30 @@ const savedVehicle = {
   turbo_steps: JSON.stringify([7661])
 };
 
-context.savedVehicle = savedVehicle;
+const archivedVehicleUsingSameCard = {
+  ...savedVehicle,
+  vehicle_id: 'ancien-vehicule',
+  catalog_vehicle_id: 'ancien-vehicule',
+  price_ttc: 70400,
+  depense_total: 82993,
+  status: 'Vendu',
+  exit_type: 'vendu',
+  frein_level: 1,
+  frein_paid: 2056,
+  turbo_level: 0,
+  turbo_paid: 0
+};
+
+savedVehicle.status = 'Appartement';
+savedVehicle.exit_type = '';
+context.data.vehicles = [archivedVehicleUsingSameCard, savedVehicle];
+context.savedVehicle = vm.runInContext('findGarageVehicle(3)', context);
+
+assert.equal(
+  context.savedVehicle.vehicle_id,
+  'indiana',
+  'Une carte grise reutilisee doit cibler son vehicule actif, jamais son ancien proprietaire archive.'
+);
 
 const currentPrice = percent => context.calculatePerformancePrice(
   69000,
@@ -159,10 +184,31 @@ assert.equal(restored.depense_total, 56737);
 assert.equal(restored.moteur_paid, 2874);
 assert.deepEqual(JSON.parse(restored.moteur_steps), [479, 958, 1437]);
 
+const turboPending = vm.runInContext(
+  "buildGaragePerformanceDraft(savedVehicle, { ...savedLevels, turbo: 1 })",
+  context
+);
+
+assert.equal(
+  turboPending.turbo_paid,
+  currentPrice(0.16),
+  'Le turbo en attente doit etre calcule depuis l Indiana actif.'
+);
+assert.equal(
+  turboPending.depense_total,
+  56737 + currentPrice(0.16),
+  'La depense du brouillon ne doit jamais reprendre le prix de l ancien vehicule archive.'
+);
+
 assert.match(
   source,
   /function renderGaragePreservingVehicle\(cardId\)/,
   'La restauration de position par fiche doit être présente.'
+);
+assert.match(
+  extractFunctionBlock('renderGaragePreservingVehicle', 'layoutGarageMasonry'),
+  /:not\(\.archived\)/,
+  'L ancrage doit lui aussi cibler la fiche active quand une carte a ete reutilisee.'
 );
 assert.match(
   extractFunctionBlock('togglePerf', 'handleGarageTariffScopeChange'),

@@ -214,7 +214,7 @@ function preserveGarageViewportPosition(element, updateState) {
 function renderGaragePreservingVehicle(cardId) {
   const numericCardId = Number(cardId);
   const vehicleCard = document.querySelector(
-    `.vehicle[data-card-id="${numericCardId}"]`
+    `.vehicle[data-card-id="${numericCardId}"]:not(.archived)`
   );
 
   preserveGarageViewportPosition(vehicleCard, renderGarage);
@@ -735,7 +735,9 @@ function getCurrentPerfPrice(vehicle, perfName, index) {
 
 function findGarageVehicle(cardId) {
   return data?.vehicles?.find(
-    vehicle => Number(vehicle.card_id) === Number(cardId)
+    vehicle =>
+      Number(vehicle.card_id) === Number(cardId) &&
+      !isGarageVehicleArchived(vehicle)
   ) || null;
 }
 
