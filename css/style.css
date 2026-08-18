@@ -1897,6 +1897,43 @@ body.catalogue-page.light {
   color: var(--catalogue-muted);
 }
 
+.catalogue-brand-meta {
+  margin: 6px 0 0;
+  color: var(--catalogue-muted);
+  font-size: 12px;
+}
+
+.catalogue-brand-logos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.catalogue-brand-logo {
+  display: grid;
+  grid-template-columns: 34px auto;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 5px 8px 5px 5px;
+  border: 1px solid rgb(var(--catalogue-dealer-rgb) / .45);
+  border-radius: 8px;
+  background: rgb(var(--catalogue-dealer-rgb) / .08);
+}
+
+.catalogue-brand-logo img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.catalogue-brand-logo figcaption {
+  color: var(--catalogue-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
 .catalogue-info-grid,
 .catalogue-characteristics {
   display: grid;

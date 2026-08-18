@@ -53,6 +53,9 @@ const catalogueElements = {
   manufacturer: document.getElementById('catalogueManufacturer'),
   name: document.getElementById('catalogueVehicleName'),
   category: document.getElementById('catalogueVehicleCategory'),
+  brandMeta: document.getElementById('catalogueBrandMeta'),
+  brandCountry: document.getElementById('catalogueBrandCountry'),
+  brandLogos: document.getElementById('catalogueBrandLogos'),
   dealership: document.getElementById('catalogueDealership'),
   priceHT: document.getElementById('cataloguePriceHT'),
   vat: document.getElementById('catalogueVat'),
@@ -91,6 +94,32 @@ function catalogueDisplayDealership(value) {
 function catalogueDisplayCategory(value) {
   const key = catalogueNormalize(value).replace(/[\s_-]+/g, '');
   return catalogueCategoryLabels[key] || String(value || 'Catégorie non renseignée');
+}
+
+function catalogueSafeImageUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim(), window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function catalogueRenderBrand(vehicle) {
+  const brand = vehicle?.brand;
+  const currentLogo = catalogueSafeImageUrl(brand?.logo_url_current);
+  const legacyLogo = catalogueSafeImageUrl(brand?.logo_url_legacy);
+  const logos = [
+    currentLogo ? { url: currentLogo, label: 'Logo actuel' } : null,
+    legacyLogo ? { url: legacyLogo, label: 'Ancien logo' } : null
+  ].filter(Boolean);
+
+  catalogueElements.brandMeta.hidden = !brand?.country;
+  catalogueElements.brandCountry.textContent = brand?.country ? 'Pays : ' + brand.country : '';
+  catalogueElements.brandLogos.hidden = logos.length === 0;
+  catalogueElements.brandLogos.innerHTML = logos.map(item =>
+    `<figure class="catalogue-brand-logo"><img src="${catalogueEscape(item.url)}" alt="${catalogueEscape(item.label)}" loading="lazy" referrerpolicy="no-referrer"><figcaption>${item.label}</figcaption></figure>`
+  ).join('');
 }
 
 function catalogueVehicleDealerships(vehicle) {
@@ -216,6 +245,7 @@ function catalogueRenderDetail(vehicle) {
   catalogueElements.manufacturer.textContent = vehicle.manufacturer || 'Fabricant non renseigné';
   catalogueElements.name.textContent = vehicle.name || '-';
   catalogueElements.category.textContent = catalogueDisplayCategory(vehicle.category);
+  catalogueRenderBrand(vehicle);
   catalogueElements.dealership.textContent = catalogueDealershipText(vehicle);
   catalogueElements.priceHT.textContent = catalogueMoney(vehicle.price);
   catalogueElements.vat.textContent = vehicle.is_job ? '—' : `${Math.round((Number(catalogueState.data.tvaVehicle) || 0) * 100)} %`;

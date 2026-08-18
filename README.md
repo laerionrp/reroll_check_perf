@@ -1,6 +1,12 @@
 # Reroll Check Perf
 
-## v1.3.6 — Catalogue public et intégré
+## v1.3.7 — référentiel des marques
+
+Le Catalogue accepte désormais une fiche marque optionnelle avec pays et deux
+liens de logos : un logo actuel et un ancien logo. Les deux versions publique
+et intégrée utilisent le même code Catalogue.
+
+## v1.3.7 — référentiel des marques
 
 Les nouveaux tarifs de performances utilisent deux plafonds distincts : d'abord
 le prix HT du palier, puis sa TVA. `js/performance-pricing.js` porte cette règle
@@ -121,4 +127,4 @@ n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.6**
+**v1.3.7**
