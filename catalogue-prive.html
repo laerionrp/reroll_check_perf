@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Catalogue public - Reroll Check Perf</title>
+  <title>Catalogue RCP - Reroll Check Perf</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
   <meta name="theme-color" content="#2f6f9f">
 </head>
 
-<body class="catalogue-page catalogue-page--public">
+<body class="catalogue-page catalogue-page--private">
   <header class="page-header page-header--catalogue">
     <div class="page-header-inner">
       <img class="page-header-logo" src="images/header-logo-128.png" alt="RCP">
@@ -22,6 +22,13 @@
   </header>
 
   <main>
+    <nav
+      class="tabs"
+      aria-label="Navigation principale"
+      data-app-navigation
+      data-active-page="catalogue"
+    ></nav>
+
     <div id="catalogueError" class="catalogue-message catalogue-message--error" role="alert" hidden></div>
 
     <section class="catalogue-layout" aria-label="Catalogue des véhicules">
@@ -100,6 +107,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/navigation.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/catalogue.js"></script>
 </body>

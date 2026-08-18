@@ -4,7 +4,7 @@ const errorBox = document.getElementById('error');
 
 const loginMessage = sessionStorage.getItem('garage_login_message');
 const LOGIN_TARGETS = {
-  control: 'index.html',
+  control: 'controle.html',
   inventory: 'garage.html',
   settings: 'settings.html'
 };

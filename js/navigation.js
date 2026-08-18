@@ -2,7 +2,7 @@ const RCP_NAV_ITEMS = Object.freeze([
   {
     id: 'control',
     label: 'Contrôle tarif',
-    href: 'index.html'
+    href: 'controle.html'
   },
   {
     id: 'inventory',
@@ -12,7 +12,7 @@ const RCP_NAV_ITEMS = Object.freeze([
   {
     id: 'catalogue',
     label: 'Catalogue',
-    href: 'catalogue.html'
+    href: 'catalogue-prive.html'
   },
   {
     id: 'settings',

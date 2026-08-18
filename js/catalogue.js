@@ -15,6 +15,33 @@ const cataloguePerfLabels = {
   turbo: 'Turbo'
 };
 
+const catalogueCategoryLabels = {
+  compacts: 'Compactes',
+  sports: 'Sportives',
+  sportsclassics: 'Sportives classiques',
+  super: 'Supercars',
+  sedans: 'Berlines',
+  coupes: 'Coupés',
+  muscle: 'Muscle cars',
+  suvs: 'SUV',
+  offroad: 'Tout-terrain',
+  motorcycles: 'Motos',
+  industrial: 'Industriels',
+  utility: 'Utilitaires',
+  vans: 'Fourgonnettes',
+  planes: 'Avions',
+  helicopters: 'Hélicoptères',
+  boats: 'Bateaux',
+  service: 'Services',
+  emergency: 'Urgence',
+  military: 'Militaires',
+  commercial: 'Commerciaux',
+  openwheel: 'Monoplaces',
+  cycles: 'Cycles',
+  trailers: 'Remorques',
+  other: 'Autres'
+};
+
 const catalogueElements = {
   search: document.getElementById('catalogueSearch'),
   reset: document.getElementById('catalogueReset'),
@@ -59,6 +86,11 @@ function catalogueDisplayDealership(value) {
     vapid_los_santos: 'Vapid of Los Santos'
   };
   return known[catalogueNormalize(value).replace(/\s+/g, '_')] || String(value || 'Non renseignée');
+}
+
+function catalogueDisplayCategory(value) {
+  const key = catalogueNormalize(value).replace(/[\s_-]+/g, '');
+  return catalogueCategoryLabels[key] || String(value || 'Catégorie non renseignée');
 }
 
 function catalogueVehicleDealerships(vehicle) {
@@ -109,10 +141,16 @@ function catalogueRenderFilters() {
       ? catalogueVehicleDealerships(vehicle).map(item => String(item.dealership_id || '').trim())
       : [String(vehicle[field === 'manufacturer' ? 'manufacturer' : 'category'] || '').trim()]).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b, 'fr'));
-    menu.innerHTML = values.map(value => `<button type="button" class="catalogue-option" data-value="${catalogueEscape(value)}">${catalogueEscape(field === 'dealership' ? catalogueDisplayDealership(value) : value)}</button>`).join('');
+    const clearLabel = field === 'category' ? 'Toutes les catégories' : field === 'dealership' ? 'Toutes les concessions' : 'Toutes les marques';
+    menu.innerHTML = `<button type="button" class="catalogue-option catalogue-option--clear" data-value="">${clearLabel}</button>` + values.map(value => {
+      const label = field === 'dealership' ? catalogueDisplayDealership(value) : field === 'category' ? catalogueDisplayCategory(value) : value;
+      return `<button type="button" class="catalogue-option" data-value="${catalogueEscape(value)}">${catalogueEscape(label)}</button>`;
+    }).join('');
     menu.querySelectorAll('.catalogue-option').forEach(button => button.addEventListener('click', () => {
       catalogueState.filters[field] = catalogueNormalize(button.dataset.value);
-      filter.querySelector('.catalogue-filter-button').textContent = field === 'category' ? 'Catégories : ' + button.textContent : field === 'dealership' ? 'Concession : ' + button.textContent : 'Marque : ' + button.textContent;
+      const baseLabel = field === 'category' ? 'Catégories' : field === 'dealership' ? 'Concessions' : 'Marques';
+      const selectedLabel = button.dataset.value === '' ? baseLabel : button.textContent;
+      filter.querySelector('.catalogue-filter-button').textContent = selectedLabel;
       menu.hidden = true;
       filter.querySelector('.catalogue-filter-button').setAttribute('aria-expanded', 'false');
       catalogueRender();
@@ -177,7 +215,7 @@ function catalogueRenderDetail(vehicle) {
   catalogueElements.detail.className = 'catalogue-vehicle-detail ' + catalogueDealerClass(cataloguePrimaryDealerId(vehicle));
   catalogueElements.manufacturer.textContent = vehicle.manufacturer || 'Fabricant non renseigné';
   catalogueElements.name.textContent = vehicle.name || '-';
-  catalogueElements.category.textContent = vehicle.category || 'Catégorie non renseignée';
+  catalogueElements.category.textContent = catalogueDisplayCategory(vehicle.category);
   catalogueElements.dealership.textContent = catalogueDealershipText(vehicle);
   catalogueElements.priceHT.textContent = catalogueMoney(vehicle.price);
   catalogueElements.vat.textContent = vehicle.is_job ? '—' : `${Math.round((Number(catalogueState.data.tvaVehicle) || 0) * 100)} %`;

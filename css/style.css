@@ -1645,8 +1645,8 @@ body.catalogue-page.light {
   grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
   gap: 20px;
   align-items: stretch;
-  height: min(760px, calc(100vh - 220px));
-  min-height: 520px;
+  height: min(760px, calc(100dvh - 215px));
+  min-height: 460px;
 }
 
 .catalogue-sidebar,
@@ -1683,6 +1683,7 @@ body.catalogue-page.light {
 
 .catalogue-filter-bar {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -1693,6 +1694,10 @@ body.catalogue-page.light {
 
 .catalogue-filter-button,
 .catalogue-reset {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   width: 100%;
   text-align: left;
   background: var(--catalogue-card-soft);
@@ -1735,6 +1740,13 @@ body.catalogue-page.light {
 .catalogue-option:focus-visible {
   background: var(--catalogue-accent);
   color: #fff;
+}
+
+.catalogue-option--clear {
+  border-bottom: 1px solid var(--catalogue-border);
+  margin-bottom: 5px;
+  color: var(--catalogue-accent-soft);
+  font-weight: 700;
 }
 
 .catalogue-reset {
@@ -1987,6 +1999,7 @@ body.catalogue-page.light {
 }
 
 @media (max-width: 700px) {
+  .catalogue-filter-bar { grid-template-columns: 1fr; }
   .catalogue-detail { padding: 16px; }
   .catalogue-vehicle-heading { flex-direction: column; }
   .catalogue-photo-placeholder--small { width: 100%; max-width: 280px; flex-basis: auto; }
