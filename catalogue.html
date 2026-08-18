@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catalogue - Reroll Check Perf</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+  <meta name="theme-color" content="#2f6f9f">
+</head>
+
+<body class="catalogue-page">
+  <header class="page-header page-header--catalogue">
+    <div class="page-header-inner">
+      <img class="page-header-logo" src="images/header-logo-128.png" alt="RCP">
+      <div class="page-header-title-frame">
+        <span class="page-header-title">Catalogue</span>
+      </div>
+      <span class="page-header-balance" aria-hidden="true"></span>
+    </div>
+  </header>
+
+  <main>
+    <nav
+      class="tabs"
+      aria-label="Navigation principale"
+      data-app-navigation
+      data-active-page="catalogue"
+    ></nav>
+
+    <div id="catalogueError" class="catalogue-message catalogue-message--error" role="alert" hidden></div>
+
+    <section class="catalogue-layout" aria-label="Catalogue des véhicules">
+      <aside class="catalogue-sidebar">
+        <div class="catalogue-search-wrap">
+          <label for="catalogueSearch">Rechercher un véhicule</label>
+          <input id="catalogueSearch" type="search" placeholder="Nom, modèle, fabricant..." autocomplete="off">
+        </div>
+
+        <div class="catalogue-filter-bar" aria-label="Filtres du catalogue">
+          <div class="catalogue-filter" data-filter="category">
+            <button type="button" class="catalogue-filter-button" aria-expanded="false">Catégories</button>
+            <div class="catalogue-filter-menu" hidden></div>
+          </div>
+          <div class="catalogue-filter" data-filter="dealership">
+            <button type="button" class="catalogue-filter-button" aria-expanded="false">Concessions</button>
+            <div class="catalogue-filter-menu" hidden></div>
+          </div>
+          <div class="catalogue-filter" data-filter="manufacturer">
+            <button type="button" class="catalogue-filter-button" aria-expanded="false">Marques</button>
+            <div class="catalogue-filter-menu" hidden></div>
+          </div>
+        </div>
+
+        <button type="button" id="catalogueReset" class="catalogue-reset" hidden>Réinitialiser</button>
+
+        <div class="catalogue-results-summary" aria-live="polite">
+          <span id="catalogueResultCount">Chargement...</span>
+        </div>
+
+        <div id="catalogueVehicleList" class="catalogue-vehicle-list" role="listbox" aria-label="Véhicules disponibles">
+          <div class="catalogue-empty">Chargement du catalogue...</div>
+        </div>
+      </aside>
+
+      <section class="catalogue-detail" aria-live="polite">
+        <div id="cataloguePlaceholder" class="catalogue-detail-placeholder">
+          <div class="catalogue-photo-placeholder" aria-hidden="true"><span>PHOTO</span></div>
+          <h2>Sélectionne un véhicule</h2>
+          <p>Les informations du véhicule sélectionné apparaîtront ici.</p>
+        </div>
+
+        <div id="catalogueVehicleDetail" hidden>
+          <div class="catalogue-vehicle-heading">
+            <div>
+              <p id="catalogueManufacturer" class="catalogue-eyebrow">Fabricant</p>
+              <h1 id="catalogueVehicleName">-</h1>
+              <p id="catalogueVehicleCategory" class="catalogue-subtitle">-</p>
+            </div>
+            <div class="catalogue-photo-placeholder catalogue-photo-placeholder--small" aria-label="Emplacement photo futur"><span>PHOTO</span></div>
+          </div>
+
+          <div class="catalogue-info-grid">
+            <div class="catalogue-info-item"><span>Concession</span><strong id="catalogueDealership">-</strong></div>
+            <div class="catalogue-info-item"><span>Prix HT</span><strong id="cataloguePriceHT">-</strong></div>
+            <div class="catalogue-info-item"><span>TVA</span><strong id="catalogueVat">-</strong></div>
+            <div class="catalogue-info-item"><span>Prix TTC</span><strong id="cataloguePriceTTC">-</strong></div>
+          </div>
+
+          <section class="catalogue-subpanel">
+            <h2>Caractéristiques</h2>
+            <div id="catalogueCharacteristics" class="catalogue-characteristics"></div>
+          </section>
+
+          <section class="catalogue-subpanel">
+            <h2>Performances disponibles</h2>
+            <div id="cataloguePerformances" class="catalogue-performance-list"></div>
+          </section>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
+  <div class="app-version"><span>⚙️ v1.3.5</span> · <a href="mentions-legales.html" aria-label="Mentions légales et confidentialité">Mentions légales</a></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/catalogue.js"></script>
+</body>
+</html>

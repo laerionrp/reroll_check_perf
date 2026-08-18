@@ -10,6 +10,11 @@ const RCP_NAV_ITEMS = Object.freeze([
     href: 'garage.html'
   },
   {
+    id: 'catalogue',
+    label: 'Catalogue',
+    href: 'catalogue.html'
+  },
+  {
     id: 'settings',
     label: 'Paramètres',
     href: 'settings.html'
