@@ -1,6 +1,6 @@
 # Reroll Check Perf
 
-## v1.3.4 — reconstruction propre catalogue et sauvegarde inventaire
+## v1.3.5 — première page Catalogue publique
 
 Les nouveaux tarifs de performances utilisent deux plafonds distincts : d'abord
 le prix HT du palier, puis sa TVA. `js/performance-pricing.js` porte cette règle
@@ -17,6 +17,7 @@ Application web de gestion de véhicules GTA RP.
 - ⚙️ Calcul des performances
 - 📋 Gestion des cartes grises
 - 🚘 Inventaire des véhicules
+- 📚 Catalogue public des véhicules avec recherche et filtres cumulables
 - 🌗 Thème clair / sombre
 - 📱 Interface responsive
 - ☁️ Base de données Google Sheets
@@ -39,6 +40,7 @@ Le projet est séparé en trois parties :
    - `index.html` et `js/public.js` : contrôle public des tarifs ;
    - `login.html` et `js/login.js` : connexion à l’inventaire ;
    - `garage.html` et `js/garage.js` : inventaire privé ;
+   - `catalogue.html` et `js/catalogue.js` : catalogue public des véhicules ;
    - `js/api.js` : appels vers le Web App Apps Script ;
    - `css/style.css` : styles partagés et responsive.
 
@@ -117,4 +119,4 @@ n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.4**
+**v1.3.5**

@@ -1588,6 +1588,406 @@ button {
   }
 }
 
+/* =========================================================
+   Catalogue — première livraison v1.3.5
+   Palette isolée : bleu / bleu pastel.
+   ========================================================= */
+
+body.catalogue-page {
+  --catalogue-bg: #162331;
+  --catalogue-card: #213344;
+  --catalogue-card-soft: #2b4052;
+  --catalogue-border: #46647b;
+  --catalogue-accent: #4d9bd0;
+  --catalogue-accent-soft: #86c4e7;
+  --catalogue-text: #eef7fc;
+  --catalogue-muted: #a9c0d0;
+  --catalogue-neutral: #7390a4;
+  --bg: var(--catalogue-bg);
+  --card: var(--catalogue-card);
+  --card-dark: #1b2b39;
+  --border: var(--catalogue-border);
+  --accent: var(--catalogue-accent);
+  --text: var(--catalogue-text);
+  --muted: var(--catalogue-muted);
+  background: var(--catalogue-bg);
+  color: var(--catalogue-text);
+}
+
+body.catalogue-page.light {
+  --catalogue-bg: #eaf4fa;
+  --catalogue-card: #ffffff;
+  --catalogue-card-soft: #e0eff7;
+  --catalogue-border: #a6c8dc;
+  --catalogue-accent: #347ca9;
+  --catalogue-accent-soft: #6faecc;
+  --catalogue-text: #1c3444;
+  --catalogue-muted: #577284;
+  --catalogue-neutral: #5e7d91;
+}
+
+.catalogue-page .page-header {
+  background: var(--catalogue-card);
+  border-bottom-color: var(--catalogue-border);
+}
+
+.catalogue-page .page-header-title-frame::before,
+.catalogue-page .page-header-title-frame::after {
+  border-color: var(--catalogue-accent-soft);
+}
+
+.catalogue-page main {
+  max-width: 1650px;
+}
+
+.catalogue-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: stretch;
+  min-height: min(720px, calc(100vh - 220px));
+}
+
+.catalogue-sidebar,
+.catalogue-detail {
+  min-width: 0;
+  border: 1px solid var(--catalogue-border);
+  border-radius: 14px;
+  background: var(--catalogue-card);
+  box-shadow: inset 0 3px 0 var(--catalogue-accent);
+}
+
+.catalogue-sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+}
+
+.catalogue-sidebar label {
+  color: var(--catalogue-accent-soft);
+}
+
+.catalogue-search-wrap input {
+  background: var(--catalogue-card-soft);
+  color: var(--catalogue-text);
+  border-color: var(--catalogue-border);
+  margin-bottom: 14px;
+}
+
+.catalogue-search-wrap input::placeholder {
+  color: var(--catalogue-muted);
+}
+
+.catalogue-filter-bar {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.catalogue-filter {
+  position: relative;
+}
+
+.catalogue-filter-button,
+.catalogue-reset {
+  width: 100%;
+  text-align: left;
+  background: var(--catalogue-card-soft);
+  color: var(--catalogue-text);
+  border-color: var(--catalogue-border);
+}
+
+.catalogue-filter-button::after {
+  content: '⌄';
+  float: right;
+  color: var(--catalogue-accent-soft);
+}
+
+.catalogue-filter-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--catalogue-border);
+  border-radius: 9px;
+  background: var(--catalogue-card);
+  box-shadow: 0 12px 24px rgb(0 0 0 / .28);
+}
+
+.catalogue-option {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--catalogue-text);
+  text-align: left;
+}
+
+.catalogue-option:hover,
+.catalogue-option:focus-visible {
+  background: var(--catalogue-accent);
+  color: #fff;
+}
+
+.catalogue-reset {
+  margin: 2px 0 10px;
+  color: var(--catalogue-accent-soft);
+  border-style: dashed;
+}
+
+.catalogue-results-summary {
+  padding: 6px 2px 10px;
+  color: var(--catalogue-muted);
+  font-size: 13px;
+}
+
+.catalogue-vehicle-list {
+  flex: 1;
+  min-height: 180px;
+  overflow-y: auto;
+  padding: 2px 4px 2px 0;
+  scrollbar-color: var(--catalogue-accent) var(--catalogue-card-soft);
+}
+
+.catalogue-vehicle-item {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 12px;
+  border: 1px solid var(--catalogue-border);
+  border-left: 4px solid var(--catalogue-neutral);
+  border-radius: 9px;
+  background: var(--catalogue-card-soft);
+  color: var(--catalogue-text);
+  text-align: left;
+}
+
+.catalogue-vehicle-item strong,
+.catalogue-vehicle-item span,
+.catalogue-vehicle-item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogue-vehicle-item span,
+.catalogue-vehicle-item small {
+  margin-top: 3px;
+  color: var(--catalogue-muted);
+  font-size: 12px;
+}
+
+.catalogue-vehicle-item.selected {
+  border-color: var(--catalogue-accent-soft);
+  background: rgb(77 155 208 / .18);
+  box-shadow: 0 0 0 1px rgb(134 196 231 / .2);
+}
+
+.catalogue-empty {
+  padding: 22px 10px;
+  color: var(--catalogue-muted);
+  text-align: center;
+}
+
+.catalogue-detail {
+  padding: 24px;
+  overflow: hidden;
+}
+
+.catalogue-detail-placeholder {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  color: var(--catalogue-muted);
+  text-align: center;
+}
+
+.catalogue-detail-placeholder h2,
+.catalogue-detail-placeholder p {
+  margin: 0;
+}
+
+.catalogue-photo-placeholder {
+  display: grid;
+  width: min(100%, 360px);
+  aspect-ratio: 16 / 9;
+  place-items: center;
+  border: 2px dashed var(--catalogue-border);
+  border-radius: 12px;
+  background: var(--catalogue-card-soft);
+  color: var(--catalogue-muted);
+  letter-spacing: .16em;
+  font-size: 12px;
+}
+
+.catalogue-photo-placeholder--small {
+  width: 190px;
+  flex: 0 0 190px;
+}
+
+.catalogue-vehicle-detail {
+  --catalogue-dealer: var(--catalogue-neutral);
+  --catalogue-dealer-rgb: 115 144 164;
+  border-left: 4px solid var(--catalogue-dealer);
+  padding-left: 18px;
+}
+
+.catalogue-vehicle-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgb(var(--catalogue-dealer-rgb) / .5);
+}
+
+.catalogue-vehicle-heading h1 {
+  margin: 3px 0 4px;
+  color: var(--catalogue-text);
+  font-size: clamp(24px, 3vw, 38px);
+}
+
+.catalogue-eyebrow,
+.catalogue-subtitle {
+  margin: 0;
+  color: var(--catalogue-dealer);
+}
+
+.catalogue-eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.catalogue-subtitle {
+  color: var(--catalogue-muted);
+}
+
+.catalogue-info-grid,
+.catalogue-characteristics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.catalogue-info-item,
+.catalogue-characteristic {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgb(var(--catalogue-dealer-rgb) / .45);
+  border-radius: 8px;
+  background: rgb(var(--catalogue-dealer-rgb) / .1);
+}
+
+.catalogue-info-item span,
+.catalogue-characteristic span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--catalogue-muted);
+  font-size: 12px;
+}
+
+.catalogue-info-item strong,
+.catalogue-characteristic strong {
+  display: block;
+  overflow: hidden;
+  color: var(--catalogue-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogue-subpanel {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--catalogue-border);
+}
+
+.catalogue-subpanel h2 {
+  margin: 0 0 12px;
+  color: var(--catalogue-dealer);
+  font-size: 18px;
+}
+
+.catalogue-performance-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.catalogue-performance {
+  padding: 8px 12px;
+  border: 1px solid var(--catalogue-dealer);
+  border-radius: 999px;
+  background: rgb(var(--catalogue-dealer-rgb) / .13);
+  color: var(--catalogue-text);
+  font-weight: 600;
+}
+
+.catalogue-empty--inline {
+  padding: 4px 0;
+  text-align: left;
+}
+
+.catalogue-message {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--catalogue-border);
+  border-radius: 9px;
+}
+
+.catalogue-message--error {
+  color: #ffd9d9;
+  background: #642f38;
+}
+
+/* Couleurs concessionnaire limitées au bloc sélectionné et à sa ligne de liste. */
+.catalogue-vehicle-detail.catalogue-dealer-benefactor_gallivanter { --catalogue-dealer: #d39a55; --catalogue-dealer-rgb: 211 154 85; }
+.catalogue-vehicle-detail.catalogue-dealer-bourgeois_bicycles { --catalogue-dealer: #b9c5d1; --catalogue-dealer-rgb: 185 197 209; }
+.catalogue-vehicle-detail.catalogue-dealer-elitas_travel { --catalogue-dealer: #df6b9c; --catalogue-dealer-rgb: 223 107 156; }
+.catalogue-vehicle-detail.catalogue-dealer-get_aweigh { --catalogue-dealer: #5dbed0; --catalogue-dealer-rgb: 93 190 208; }
+.catalogue-vehicle-detail.catalogue-dealer-larrys_rv_sales { --catalogue-dealer: #d7895d; --catalogue-dealer-rgb: 215 137 93; }
+.catalogue-vehicle-detail.catalogue-dealer-luxury_auto { --catalogue-dealer: #bc8ae8; --catalogue-dealer-rgb: 188 138 232; }
+.catalogue-vehicle-detail.catalogue-dealer-sanders_motorcycles { --catalogue-dealer: #d35e55; --catalogue-dealer-rgb: 211 94 85; }
+.catalogue-vehicle-detail.catalogue-dealer-vapid_los_santos { --catalogue-dealer: #e0c65d; --catalogue-dealer-rgb: 224 198 93; }
+
+.catalogue-vehicle-item.catalogue-dealer-benefactor_gallivanter { border-left-color: #d39a55; }
+.catalogue-vehicle-item.catalogue-dealer-bourgeois_bicycles { border-left-color: #b9c5d1; }
+.catalogue-vehicle-item.catalogue-dealer-elitas_travel { border-left-color: #df6b9c; }
+.catalogue-vehicle-item.catalogue-dealer-get_aweigh { border-left-color: #5dbed0; }
+.catalogue-vehicle-item.catalogue-dealer-larrys_rv_sales { border-left-color: #d7895d; }
+.catalogue-vehicle-item.catalogue-dealer-luxury_auto { border-left-color: #bc8ae8; }
+.catalogue-vehicle-item.catalogue-dealer-sanders_motorcycles { border-left-color: #d35e55; }
+.catalogue-vehicle-item.catalogue-dealer-vapid_los_santos { border-left-color: #e0c65d; }
+
+@media (max-width: 900px) {
+  .catalogue-layout { grid-template-columns: 1fr; min-height: 0; }
+  .catalogue-sidebar { min-height: 420px; }
+  .catalogue-vehicle-list { max-height: 420px; }
+}
+
+@media (max-width: 700px) {
+  .catalogue-detail { padding: 16px; }
+  .catalogue-vehicle-heading { flex-direction: column; }
+  .catalogue-photo-placeholder--small { width: 100%; max-width: 280px; flex-basis: auto; }
+  .catalogue-info-grid,
+  .catalogue-characteristics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 390px) {
+  .catalogue-info-grid,
+  .catalogue-characteristics { grid-template-columns: 1fr; }
+}
+
 .tariff-selector { display:flex; align-items:center; gap:8px; margin-left:auto; padding:5px 7px; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-size:12px; font-weight:600; white-space:nowrap; }
 .tariff-selector div { display:flex; gap:3px; }
 .tariff-selector button { min-width:34px; margin:0; padding:6px 8px; background:transparent; color:var(--muted); }
