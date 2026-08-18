@@ -1903,6 +1903,10 @@ body.catalogue-page.light {
   font-size: 12px;
 }
 
+.catalogue-brand-meta span + span::before {
+  content: ' · ';
+}
+
 .catalogue-brand-logos {
   display: flex;
   flex-wrap: wrap;
@@ -2011,23 +2015,23 @@ body.catalogue-page.light {
 }
 
 /* Couleurs concessionnaire limitées au bloc sélectionné et à sa ligne de liste. */
-.catalogue-vehicle-detail.catalogue-dealer-benefactor_gallivanter { --catalogue-dealer: #d39a55; --catalogue-dealer-rgb: 211 154 85; }
-.catalogue-vehicle-detail.catalogue-dealer-bourgeois_bicycles { --catalogue-dealer: #b9c5d1; --catalogue-dealer-rgb: 185 197 209; }
-.catalogue-vehicle-detail.catalogue-dealer-elitas_travel { --catalogue-dealer: #df6b9c; --catalogue-dealer-rgb: 223 107 156; }
-.catalogue-vehicle-detail.catalogue-dealer-get_aweigh { --catalogue-dealer: #5dbed0; --catalogue-dealer-rgb: 93 190 208; }
-.catalogue-vehicle-detail.catalogue-dealer-larrys_rv_sales { --catalogue-dealer: #d7895d; --catalogue-dealer-rgb: 215 137 93; }
+.catalogue-vehicle-detail.catalogue-dealer-benefactor_gallivanter { --catalogue-dealer: #1fc48b; --catalogue-dealer-rgb: 31 196 139; }
+.catalogue-vehicle-detail.catalogue-dealer-bourgeois_bicycles { --catalogue-dealer: #65c94a; --catalogue-dealer-rgb: 101 201 74; }
+.catalogue-vehicle-detail.catalogue-dealer-elitas_travel { --catalogue-dealer: #8bd7f4; --catalogue-dealer-rgb: 139 215 244; }
+.catalogue-vehicle-detail.catalogue-dealer-get_aweigh { --catalogue-dealer: #23c9d8; --catalogue-dealer-rgb: 35 201 216; }
+.catalogue-vehicle-detail.catalogue-dealer-larrys_rv_sales { --catalogue-dealer: #ed921f; --catalogue-dealer-rgb: 237 146 31; }
 .catalogue-vehicle-detail.catalogue-dealer-luxury_auto { --catalogue-dealer: #bc8ae8; --catalogue-dealer-rgb: 188 138 232; }
-.catalogue-vehicle-detail.catalogue-dealer-sanders_motorcycles { --catalogue-dealer: #d35e55; --catalogue-dealer-rgb: 211 94 85; }
-.catalogue-vehicle-detail.catalogue-dealer-vapid_los_santos { --catalogue-dealer: #e0c65d; --catalogue-dealer-rgb: 224 198 93; }
+.catalogue-vehicle-detail.catalogue-dealer-sanders_motorcycles { --catalogue-dealer: #3e66d8; --catalogue-dealer-rgb: 62 102 216; }
+.catalogue-vehicle-detail.catalogue-dealer-vapid_los_santos { --catalogue-dealer: #f04450; --catalogue-dealer-rgb: 240 68 80; }
 
-.catalogue-vehicle-item.catalogue-dealer-benefactor_gallivanter { border-left-color: #d39a55; }
-.catalogue-vehicle-item.catalogue-dealer-bourgeois_bicycles { border-left-color: #b9c5d1; }
-.catalogue-vehicle-item.catalogue-dealer-elitas_travel { border-left-color: #df6b9c; }
-.catalogue-vehicle-item.catalogue-dealer-get_aweigh { border-left-color: #5dbed0; }
-.catalogue-vehicle-item.catalogue-dealer-larrys_rv_sales { border-left-color: #d7895d; }
+.catalogue-vehicle-item.catalogue-dealer-benefactor_gallivanter { border-left-color: #1fc48b; }
+.catalogue-vehicle-item.catalogue-dealer-bourgeois_bicycles { border-left-color: #65c94a; }
+.catalogue-vehicle-item.catalogue-dealer-elitas_travel { border-left-color: #8bd7f4; }
+.catalogue-vehicle-item.catalogue-dealer-get_aweigh { border-left-color: #23c9d8; }
+.catalogue-vehicle-item.catalogue-dealer-larrys_rv_sales { border-left-color: #ed921f; }
 .catalogue-vehicle-item.catalogue-dealer-luxury_auto { border-left-color: #bc8ae8; }
-.catalogue-vehicle-item.catalogue-dealer-sanders_motorcycles { border-left-color: #d35e55; }
-.catalogue-vehicle-item.catalogue-dealer-vapid_los_santos { border-left-color: #e0c65d; }
+.catalogue-vehicle-item.catalogue-dealer-sanders_motorcycles { border-left-color: #3e66d8; }
+.catalogue-vehicle-item.catalogue-dealer-vapid_los_santos { border-left-color: #f04450; }
 
 @media (max-width: 900px) {
   .catalogue-layout { grid-template-columns: 1fr; height: auto; min-height: 0; }

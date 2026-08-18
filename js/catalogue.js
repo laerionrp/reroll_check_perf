@@ -55,6 +55,7 @@ const catalogueElements = {
   category: document.getElementById('catalogueVehicleCategory'),
   brandMeta: document.getElementById('catalogueBrandMeta'),
   brandCountry: document.getElementById('catalogueBrandCountry'),
+  brandName: document.getElementById('catalogueBrandName'),
   brandLogos: document.getElementById('catalogueBrandLogos'),
   dealership: document.getElementById('catalogueDealership'),
   priceHT: document.getElementById('cataloguePriceHT'),
@@ -109,13 +110,16 @@ function catalogueRenderBrand(vehicle) {
   const brand = vehicle?.brand;
   const currentLogo = catalogueSafeImageUrl(brand?.logo_url_current);
   const legacyLogo = catalogueSafeImageUrl(brand?.logo_url_legacy);
+  const textLogo = catalogueSafeImageUrl(brand?.logo_text_url);
   const logos = [
+    textLogo ? { url: textLogo, label: 'Logo textuel' } : null,
     currentLogo ? { url: currentLogo, label: 'Logo actuel' } : null,
     legacyLogo ? { url: legacyLogo, label: 'Ancien logo' } : null
   ].filter(Boolean);
 
-  catalogueElements.brandMeta.hidden = !brand?.country;
+  catalogueElements.brandMeta.hidden = !brand;
   catalogueElements.brandCountry.textContent = brand?.country ? 'Pays : ' + brand.country : '';
+  catalogueElements.brandName.textContent = brand?.display_name && !textLogo ? 'Marque : ' + brand.display_name : '';
   catalogueElements.brandLogos.hidden = logos.length === 0;
   catalogueElements.brandLogos.innerHTML = logos.map(item =>
     `<figure class="catalogue-brand-logo"><img src="${catalogueEscape(item.url)}" alt="${catalogueEscape(item.label)}" loading="lazy" referrerpolicy="no-referrer"><figcaption>${item.label}</figcaption></figure>`

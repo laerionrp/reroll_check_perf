@@ -1,6 +1,6 @@
 # Reroll Check Perf
 
-## v1.3.7 — référentiel des marques
+## v1.3.8 — couleurs des concessions
 
 Le Catalogue accepte désormais une fiche marque optionnelle avec pays et deux
 liens de logos : un logo actuel et un ancien logo. Les deux versions publique
@@ -127,4 +127,4 @@ n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.7**
+**v1.3.8**
