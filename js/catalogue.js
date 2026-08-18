@@ -50,13 +50,9 @@ const catalogueElements = {
   error: document.getElementById('catalogueError'),
   placeholder: document.getElementById('cataloguePlaceholder'),
   detail: document.getElementById('catalogueVehicleDetail'),
-  manufacturer: document.getElementById('catalogueManufacturer'),
   name: document.getElementById('catalogueVehicleName'),
   category: document.getElementById('catalogueVehicleCategory'),
-  brandMeta: document.getElementById('catalogueBrandMeta'),
-  brandCountry: document.getElementById('catalogueBrandCountry'),
-  brandName: document.getElementById('catalogueBrandName'),
-  brandLogos: document.getElementById('catalogueBrandLogos'),
+  brandIdentity: document.getElementById('catalogueBrandIdentity'),
   dealership: document.getElementById('catalogueDealership'),
   priceHT: document.getElementById('cataloguePriceHT'),
   vat: document.getElementById('catalogueVat'),
@@ -108,22 +104,33 @@ function catalogueSafeImageUrl(value) {
 
 function catalogueRenderBrand(vehicle) {
   const brand = vehicle?.brand;
+  const displayName = String(brand?.display_name || vehicle?.manufacturer || '').trim();
   const currentLogo = catalogueSafeImageUrl(brand?.logo_url_current);
   const legacyLogo = catalogueSafeImageUrl(brand?.logo_url_legacy);
   const textLogo = catalogueSafeImageUrl(brand?.logo_text_url);
-  const logos = [
-    textLogo ? { url: textLogo, label: 'Logo textuel' } : null,
-    currentLogo ? { url: currentLogo, label: 'Logo actuel' } : null,
-    legacyLogo ? { url: legacyLogo, label: 'Ancien logo' } : null
-  ].filter(Boolean);
+  const identity = [];
+  if (currentLogo) identity.push(`<img class="catalogue-brand-logo-image" data-brand-role="current" src="${catalogueEscape(currentLogo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`);
+  if (textLogo) {
+    identity.push(`<img class="catalogue-brand-wordmark" data-brand-role="text" src="${catalogueEscape(textLogo)}" alt="${catalogueEscape(displayName)}" loading="lazy" referrerpolicy="no-referrer">`);
+  } else if (displayName) {
+    identity.push(`<span class="catalogue-brand-name">${catalogueEscape(displayName)}</span>`);
+  }
+  if (legacyLogo) identity.push(`<img class="catalogue-brand-logo-image catalogue-brand-logo-image--legacy" data-brand-role="legacy" src="${catalogueEscape(legacyLogo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`);
 
-  catalogueElements.brandMeta.hidden = !brand;
-  catalogueElements.brandCountry.textContent = brand?.country ? 'Pays : ' + brand.country : '';
-  catalogueElements.brandName.textContent = brand?.display_name && !textLogo ? 'Marque : ' + brand.display_name : '';
-  catalogueElements.brandLogos.hidden = logos.length === 0;
-  catalogueElements.brandLogos.innerHTML = logos.map(item =>
-    `<figure class="catalogue-brand-logo"><img src="${catalogueEscape(item.url)}" alt="${catalogueEscape(item.label)}" loading="lazy" referrerpolicy="no-referrer"><figcaption>${item.label}</figcaption></figure>`
-  ).join('');
+  const identityElement = catalogueElements.brandIdentity;
+  identityElement.hidden = identity.length === 0;
+  identityElement.innerHTML = identity.join('');
+  identityElement.querySelectorAll('img').forEach(image => image.addEventListener('error', () => {
+    if (image.dataset.brandRole === 'text' && displayName) {
+      const fallback = document.createElement('span');
+      fallback.className = 'catalogue-brand-name';
+      fallback.textContent = displayName;
+      image.replaceWith(fallback);
+    } else {
+      image.remove();
+    }
+    identityElement.hidden = identityElement.children.length === 0;
+  }));
 }
 
 function catalogueVehicleDealerships(vehicle) {
@@ -224,6 +231,7 @@ function catalogueRenderCharacteristics(vehicle) {
     ['fuel_type', 'Carburant', value => value]
   ];
   const available = definitions.filter(([key]) => vehicle[key] !== undefined && vehicle[key] !== null && vehicle[key] !== '');
+  if (vehicle?.brand?.country) available.push(['brand_country', 'Pays de fabrication', () => vehicle.brand.country]);
   catalogueElements.characteristics.innerHTML = available.length
     ? available.map(([key, label, formatter]) => `<div class="catalogue-characteristic"><span>${label}</span><strong>${catalogueEscape(formatter(vehicle[key]))}</strong></div>`).join('')
     : '<div class="catalogue-empty catalogue-empty--inline">Aucune caractéristique complémentaire disponible.</div>';
@@ -234,7 +242,7 @@ function catalogueRenderPerformances(vehicle) {
   const entries = cataloguePerfOrder.filter(key => allowed.includes(key));
   catalogueElements.performances.innerHTML = entries.length
     ? entries.map(key => `<span class="catalogue-performance">${cataloguePerfLabels[key]}</span>`).join('')
-    : '<div class="catalogue-empty catalogue-empty--inline">Aucune performance disponible.</div>';
+    : '<div class="catalogue-empty catalogue-empty--inline">Aucune amélioration disponible.</div>';
 }
 
 function catalogueRenderDetail(vehicle) {
@@ -246,7 +254,6 @@ function catalogueRenderDetail(vehicle) {
   catalogueElements.placeholder.hidden = true;
   catalogueElements.detail.hidden = false;
   catalogueElements.detail.className = 'catalogue-vehicle-detail ' + catalogueDealerClass(cataloguePrimaryDealerId(vehicle));
-  catalogueElements.manufacturer.textContent = vehicle.manufacturer || 'Fabricant non renseigné';
   catalogueElements.name.textContent = vehicle.name || '-';
   catalogueElements.category.textContent = catalogueDisplayCategory(vehicle.category);
   catalogueRenderBrand(vehicle);

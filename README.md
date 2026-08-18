@@ -1,10 +1,12 @@
 # Reroll Check Perf
 
-## v1.3.8 — couleurs des concessions
+## v1.3.9 — marques et couleurs des concessions
 
-Le Catalogue accepte désormais une fiche marque optionnelle avec pays et deux
-liens de logos : un logo actuel et un ancien logo. Les deux versions publique
-et intégrée utilisent le même code Catalogue.
+Le Catalogue accepte désormais une fiche marque optionnelle avec pays, logo
+actuel, logo textuel et logo `legacy`/alternatif. L’identité est affichée sur
+une seule ligne sans cadres inutiles ; le pays apparaît dans les caractéristiques.
+La migration accepte le format réel de la feuille existante sans réordonner ses
+colonnes. Les deux versions publique et intégrée utilisent le même code Catalogue.
 
 ## v1.3.7 — référentiel des marques
 
@@ -127,4 +129,4 @@ n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.8**
+**v1.3.9**
