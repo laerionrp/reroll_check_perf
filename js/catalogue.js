@@ -491,6 +491,28 @@ catalogueElements.copyDiscord?.addEventListener('click', () => {
   const vehicle = catalogueState.vehicles.find(item => String(item.id) === String(catalogueState.selectedId));
   if (vehicle) catalogueCopyText(catalogueDiscordSummary(vehicle));
 });
+
+function catalogueSyncViewportHeight() {
+  const root = document.documentElement;
+  const layout = document.querySelector('.catalogue-layout');
+  if (!layout || window.matchMedia('(max-width: 900px)').matches) {
+    root.style.removeProperty('--catalogue-layout-height');
+    return;
+  }
+
+  const layoutTop = layout.getBoundingClientRect().top;
+  const main = document.querySelector('main');
+  const mainStyle = main ? getComputedStyle(main) : null;
+  const bottomReserve = mainStyle
+    ? parseFloat(mainStyle.paddingBottom || '0') + parseFloat(mainStyle.marginBottom || '0') + 16
+    : 32;
+  const available = Math.floor(window.innerHeight - layoutTop - bottomReserve);
+  const height = Math.max(460, Math.min(900, available));
+  root.style.setProperty('--catalogue-layout-height', `${height}px`);
+}
+
+window.addEventListener('resize', catalogueSyncViewportHeight, { passive: true });
+window.addEventListener('orientationchange', catalogueSyncViewportHeight, { passive: true });
 document.querySelectorAll('.catalogue-filter-button').forEach(button => button.addEventListener('click', () => {
   const filter = button.closest('.catalogue-filter');
   const menu = filter.querySelector('.catalogue-filter-menu');
@@ -501,3 +523,4 @@ document.querySelectorAll('.catalogue-filter-button').forEach(button => button.a
 }));
 
 catalogueLoad();
+catalogueSyncViewportHeight();

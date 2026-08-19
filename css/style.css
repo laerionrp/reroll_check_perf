@@ -1645,7 +1645,7 @@ body.catalogue-page.light {
   grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
   gap: 20px;
   align-items: stretch;
-  height: min(760px, calc(100dvh - 215px));
+  height: var(--catalogue-layout-height, min(760px, calc(100dvh - 215px)));
   min-height: 460px;
 }
 
@@ -1849,7 +1849,8 @@ body.catalogue-page.light {
 
 .catalogue-detail {
   padding: 24px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
@@ -2088,10 +2089,10 @@ body.catalogue-page.light {
 .catalogue-info-item,
 .catalogue-characteristic {
   min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  padding: 12px;
+  border: 1px solid rgb(var(--catalogue-dealer-rgb) / .45);
+  border-radius: 8px;
+  background: rgb(var(--catalogue-dealer-rgb) / .1);
 }
 
 .catalogue-info-item span,
@@ -2103,7 +2104,26 @@ body.catalogue-page.light {
 }
 
 .catalogue-info-item > span,
-.catalogue-characteristic > span { color: var(--catalogue-dealer); }
+.catalogue-characteristic > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  color: var(--catalogue-dealer);
+  white-space: nowrap;
+}
+
+.catalogue-characteristic > span .catalogue-icon {
+  display: inline-block;
+  color: var(--catalogue-dealer) !important;
+  background-color: var(--catalogue-dealer) !important;
+}
+
+.catalogue-characteristic > span > span:not(.catalogue-icon) {
+  display: inline;
+  margin: 0;
+  color: inherit;
+}
 
 .catalogue-dealership-badges { display: flex; flex-wrap: wrap; gap: 5px; }
 .catalogue-dealership-badge { display: inline-block; padding: 3px 6px; border: 1px solid rgb(var(--catalogue-dealer-rgb) / .55); border-radius: 999px; background: rgb(var(--catalogue-dealer-rgb) / .08); color: var(--catalogue-text); font-size: 11px; }
@@ -2182,6 +2202,49 @@ body.catalogue-page.light {
   .catalogue-layout { grid-template-columns: 1fr; height: auto; min-height: 0; }
   .catalogue-sidebar { min-height: 420px; }
   .catalogue-vehicle-list { height: 340px; flex: 0 0 340px; }
+}
+
+@media (min-width: 901px) {
+  .catalogue-layout {
+    min-height: 0;
+    max-height: calc(100dvh - 120px);
+  }
+
+  .catalogue-detail {
+    scrollbar-gutter: stable;
+  }
+
+  .catalogue-vehicle-heading {
+    padding-bottom: 12px;
+  }
+
+  .catalogue-subpanel {
+    margin-top: 14px;
+    padding-top: 11px;
+  }
+
+  .catalogue-info-grid,
+  .catalogue-characteristics {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .catalogue-info-item,
+  .catalogue-characteristic {
+    padding: 10px;
+  }
+
+  .catalogue-subpanel h2 {
+    margin-bottom: 9px;
+  }
+
+  .catalogue-performance-list {
+    gap: 6px;
+  }
+
+  .catalogue-performance {
+    padding: 6px 10px;
+  }
 }
 
 @media (max-width: 700px) {
