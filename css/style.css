@@ -1851,7 +1851,28 @@ body.catalogue-page.light {
   padding: 24px;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--catalogue-dealer, var(--catalogue-accent)) var(--catalogue-card-soft);
   box-sizing: border-box;
+}
+
+.catalogue-detail::-webkit-scrollbar {
+  width: 10px;
+}
+
+.catalogue-detail::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background: var(--catalogue-card-soft);
+}
+
+.catalogue-detail::-webkit-scrollbar-thumb {
+  border: 2px solid var(--catalogue-card-soft);
+  border-radius: 8px;
+  background: var(--catalogue-dealer, var(--catalogue-accent));
+}
+
+.catalogue-detail::-webkit-scrollbar-thumb:hover {
+  background: var(--catalogue-dealer, var(--catalogue-accent-soft));
 }
 
 /* Le placeholder et la fiche sont alternés par JavaScript. */
@@ -1928,7 +1949,6 @@ body.catalogue-page.light {
   gap: 20px;
   align-items: flex-start;
   padding-bottom: 18px;
-  border-bottom: 1px solid rgb(var(--catalogue-dealer-rgb) / .5);
 }
 
 .catalogue-vehicle-heading h1 {
@@ -2128,10 +2148,22 @@ body.catalogue-page.light {
 .catalogue-dealership-badges { display: flex; flex-wrap: wrap; gap: 5px; }
 .catalogue-dealership-badge { display: inline-block; padding: 3px 6px; border: 1px solid rgb(var(--catalogue-dealer-rgb) / .55); border-radius: 999px; background: rgb(var(--catalogue-dealer-rgb) / .08); color: var(--catalogue-text); font-size: 11px; }
 
+.catalogue-dealership-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--catalogue-text);
+}
+
+.catalogue-dealership-list li {
+  padding-left: 2px;
+  overflow-wrap: anywhere;
+}
+
 .catalogue-info-item strong,
 .catalogue-characteristic strong {
   display: block;
   overflow-wrap: anywhere;
+  word-break: break-word;
   color: var(--catalogue-text);
 }
 

@@ -20,12 +20,15 @@ const catalogueCategoryLabels = {
   sports: 'Sportives',
   sportsclassics: 'Sportives classiques',
   super: 'Supercars',
+  supercars: 'Supercars',
   sedans: 'Berlines',
   coupes: 'Coupés',
   muscle: 'Muscle cars',
+  musclecars: 'Muscle cars',
   grossescylindrees: 'Grosses cylindrées',
   suvs: 'SUV',
   offroad: 'Tout-terrain',
+  offroadvehicles: 'Tout-terrain',
   motorcycles: 'Motos',
   industrial: 'Industriels',
   utility: 'Utilitaires',
@@ -188,7 +191,10 @@ function cataloguePrimaryDealerId(vehicle) {
 function catalogueDealershipMarkup(vehicle) {
   const dealerships = catalogueVehicleDealerships(vehicle);
   if (!dealerships.length) return 'Non renseignée';
-  return `<span class="catalogue-dealership-badges">${dealerships.map(item => `<span class="catalogue-dealership-badge">${catalogueEscape(item.display_name || catalogueDisplayDealership(item.dealership_id))}</span>`).join('')}</span>`;
+  if (dealerships.length === 1) {
+    return catalogueEscape(dealerships[0].display_name || catalogueDisplayDealership(dealerships[0].dealership_id));
+  }
+  return `<ul class="catalogue-dealership-list">${dealerships.map(item => `<li>${catalogueEscape(item.display_name || catalogueDisplayDealership(item.dealership_id))}</li>`).join('')}</ul>`;
 }
 
 function catalogueDealerClass(value) {
