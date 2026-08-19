@@ -1,6 +1,6 @@
 # Reroll Check Perf
 
-## v1.3.9 — marques et couleurs des concessions
+## v1.3.9.1 — optimisation et enrichissement du Catalogue
 
 Le Catalogue accepte désormais une fiche marque optionnelle avec pays, logo
 actuel, logo textuel et logo `legacy`/alternatif. L’identité est affichée sur
@@ -129,4 +129,4 @@ n’est à relancer lors de cette mise à jour.
 
 ## Version
 
-**v1.3.9**
+**v1.3.9.1**

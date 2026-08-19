@@ -46,6 +46,15 @@
           </div>
         </div>
 
+        <button type="button" id="catalogueMoreFiltersToggle" class="catalogue-more-filters-toggle" aria-expanded="false">Plus de filtres</button>
+        <div id="catalogueMoreFilters" class="catalogue-more-filters" hidden>
+          <label>Carburant<select id="catalogueFuelFilter"><option value="">Tous</option></select></label>
+          <label>Permis<select id="catalogueLicenseFilter"><option value="">Tous</option></select></label>
+          <label>Places<select id="catalogueSeatsFilter"><option value="">Toutes</option></select></label>
+          <label>Attelage<select id="catalogueHitchFilter"><option value="">Tous</option><option value="true">Oui</option><option value="false">Non</option></select></label>
+          <label>Type<select id="catalogueTypeFilter"><option value="">Tous</option><option value="public">Public</option><option value="business">Entreprise</option></select></label>
+        </div>
+
         <button type="button" id="catalogueReset" class="catalogue-reset" hidden>Réinitialiser</button>
 
         <div class="catalogue-results-summary" aria-live="polite">
@@ -59,7 +68,6 @@
 
       <section class="catalogue-detail" aria-live="polite">
         <div id="cataloguePlaceholder" class="catalogue-detail-placeholder">
-          <div class="catalogue-photo-placeholder" aria-hidden="true"><span>PHOTO</span></div>
           <h2>Sélectionne un véhicule</h2>
           <p>Les informations du véhicule sélectionné apparaîtront ici.</p>
         </div>
@@ -70,8 +78,11 @@
               <div id="catalogueBrandIdentity" class="catalogue-brand-identity" hidden aria-label="Identité de la marque"></div>
               <h1 id="catalogueVehicleName">-</h1>
               <p id="catalogueVehicleCategory" class="catalogue-subtitle">-</p>
+              <div id="catalogueVehicleBadges" class="catalogue-badge-list" aria-label="Informations contextuelles"></div>
             </div>
-            <div class="catalogue-photo-placeholder catalogue-photo-placeholder--small" aria-label="Emplacement photo futur"><span>PHOTO</span></div>
+            <div id="catalogueVehiclePhotoWrap" class="catalogue-vehicle-photo-wrap" hidden>
+              <img id="catalogueVehiclePhoto" class="catalogue-vehicle-photo" alt="" loading="lazy" referrerpolicy="no-referrer">
+            </div>
           </div>
 
           <div class="catalogue-info-grid">
@@ -85,6 +96,11 @@
             <h2>Caractéristiques</h2>
             <div id="catalogueCharacteristics" class="catalogue-characteristics"></div>
           </section>
+          <div class="catalogue-detail-actions">
+            <button type="button" id="catalogueCopySummary" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--copy" aria-hidden="true"></span>Copier la fiche</button>
+            <button type="button" id="catalogueCopyLink" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--link" aria-hidden="true"></span>Copier le lien</button>
+            <span id="catalogueCopyFeedback" class="catalogue-copy-feedback" role="status" aria-live="polite"></span>
+          </div>
 
           <section class="catalogue-subpanel">
             <h2>Améliorations disponibles</h2>
@@ -96,7 +112,7 @@
   </main>
 
   <button id="themeToggle" class="theme-toggle" title="Changer de thème">☀</button>
-  <div class="app-version"><span>🗂️ v1.3.9</span> · <a href="mentions-legales.html" aria-label="Mentions légales et confidentialité">Mentions légales</a></div>
+  <div class="app-version"><span>🗂️ v1.3.9.1</span> · <a href="mentions-legales.html" aria-label="Mentions légales et confidentialité">Mentions légales</a></div>
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>

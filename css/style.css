@@ -1688,6 +1688,42 @@ body.catalogue-page.light {
   margin-bottom: 10px;
 }
 
+.catalogue-more-filters-toggle {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--catalogue-border);
+  background: transparent;
+  color: var(--catalogue-accent-soft);
+  text-align: left;
+}
+
+.catalogue-more-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.catalogue-more-filters[hidden] { display: none; }
+
+.catalogue-more-filters label {
+  display: grid;
+  gap: 4px;
+  color: var(--catalogue-muted);
+  font-size: 11px;
+}
+
+.catalogue-more-filters select {
+  min-width: 0;
+  margin: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--catalogue-border);
+  border-radius: 7px;
+  background: var(--catalogue-card-soft);
+  color: var(--catalogue-text);
+}
+
 .catalogue-filter {
   position: relative;
 }
@@ -1838,6 +1874,27 @@ body.catalogue-page.light {
   margin: 0;
 }
 
+.catalogue-vehicle-photo-wrap {
+  display: grid;
+  width: min(42%, 330px);
+  min-width: 180px;
+  aspect-ratio: 16 / 10;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(var(--catalogue-dealer-rgb) / .5);
+  border-radius: 10px;
+  background: var(--catalogue-card-soft);
+}
+
+.catalogue-vehicle-photo-wrap[hidden] { display: none; }
+
+.catalogue-vehicle-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .catalogue-photo-placeholder {
   display: grid;
   width: min(100%, 360px);
@@ -1945,6 +2002,80 @@ body.catalogue-page.light {
   object-fit: contain;
 }
 
+.catalogue-badge-list,
+.catalogue-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.catalogue-badge-list { margin-top: 12px; }
+
+.catalogue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid rgb(var(--catalogue-dealer-rgb) / .55);
+  border-radius: 999px;
+  background: rgb(var(--catalogue-dealer-rgb) / .1);
+  color: var(--catalogue-text);
+  font-size: 11px;
+}
+
+.catalogue-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  background: currentColor;
+  color: var(--catalogue-icon-color, currentColor);
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+.catalogue-badge .catalogue-icon { width: 16px; height: 16px; }
+.catalogue-action-button .catalogue-icon { width: 24px; height: 24px; }
+.catalogue-characteristic span { display: flex; align-items: center; gap: 7px; }
+
+.catalogue-icon--seats { -webkit-mask-image: url('../images/catalogue-icons/icon-seats.svg'); mask-image: url('../images/catalogue-icons/icon-seats.svg'); }
+.catalogue-icon--trunk { -webkit-mask-image: url('../images/catalogue-icons/icon-trunk.svg'); mask-image: url('../images/catalogue-icons/icon-trunk.svg'); }
+.catalogue-icon--hitch { -webkit-mask-image: url('../images/catalogue-icons/icon-hitch.svg'); mask-image: url('../images/catalogue-icons/icon-hitch.svg'); }
+.catalogue-icon--fuel { -webkit-mask-image: url('../images/catalogue-icons/icon-fuel.svg'); mask-image: url('../images/catalogue-icons/icon-fuel.svg'); }
+.catalogue-icon--electric { -webkit-mask-image: url('../images/catalogue-icons/icon-electric.svg'); mask-image: url('../images/catalogue-icons/icon-electric.svg'); }
+.catalogue-icon--license { -webkit-mask-image: url('../images/catalogue-icons/icon-license.svg'); mask-image: url('../images/catalogue-icons/icon-license.svg'); }
+.catalogue-icon--business { -webkit-mask-image: url('../images/catalogue-icons/icon-business.svg'); mask-image: url('../images/catalogue-icons/icon-business.svg'); }
+.catalogue-icon--multi-dealership { -webkit-mask-image: url('../images/catalogue-icons/icon-multi-dealership.svg'); mask-image: url('../images/catalogue-icons/icon-multi-dealership.svg'); }
+.catalogue-icon--plane { -webkit-mask-image: url('../images/catalogue-icons/icon-plane.svg'); mask-image: url('../images/catalogue-icons/icon-plane.svg'); }
+.catalogue-icon--helicopter { -webkit-mask-image: url('../images/catalogue-icons/icon-helicopter.svg'); mask-image: url('../images/catalogue-icons/icon-helicopter.svg'); }
+.catalogue-icon--boat { -webkit-mask-image: url('../images/catalogue-icons/icon-boat.svg'); mask-image: url('../images/catalogue-icons/icon-boat.svg'); }
+.catalogue-icon--bicycle { -webkit-mask-image: url('../images/catalogue-icons/icon-bicycle.svg'); mask-image: url('../images/catalogue-icons/icon-bicycle.svg'); }
+.catalogue-icon--motorcycle { -webkit-mask-image: url('../images/catalogue-icons/icon-motorcycle.svg'); mask-image: url('../images/catalogue-icons/icon-motorcycle.svg'); }
+.catalogue-icon--trailer { -webkit-mask-image: url('../images/catalogue-icons/icon-trailer.svg'); mask-image: url('../images/catalogue-icons/icon-trailer.svg'); }
+.catalogue-icon--globe { -webkit-mask-image: url('../images/catalogue-icons/icon-globe.svg'); mask-image: url('../images/catalogue-icons/icon-globe.svg'); }
+.catalogue-icon--copy { -webkit-mask-image: url('../images/catalogue-icons/icon-copy.svg'); mask-image: url('../images/catalogue-icons/icon-copy.svg'); }
+.catalogue-icon--link { -webkit-mask-image: url('../images/catalogue-icons/icon-link.svg'); mask-image: url('../images/catalogue-icons/icon-link.svg'); }
+
+.catalogue-detail-actions {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--catalogue-border);
+}
+
+.catalogue-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--catalogue-border);
+  background: var(--catalogue-card-soft);
+  color: var(--catalogue-text);
+}
+
+.catalogue-copy-feedback { color: var(--catalogue-accent-soft); font-size: 12px; }
+
 .catalogue-info-grid,
 .catalogue-characteristics {
   display: grid;
@@ -2048,8 +2179,10 @@ body.catalogue-page.light {
 
 @media (max-width: 700px) {
   .catalogue-filter-bar { grid-template-columns: 1fr; }
+  .catalogue-more-filters { grid-template-columns: 1fr 1fr; }
   .catalogue-detail { padding: 16px; }
   .catalogue-vehicle-heading { flex-direction: column; }
+  .catalogue-vehicle-photo-wrap { width: 100%; min-width: 0; max-width: 360px; }
   .catalogue-photo-placeholder--small { width: 100%; max-width: 280px; flex-basis: auto; }
   .catalogue-info-grid,
   .catalogue-characteristics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
