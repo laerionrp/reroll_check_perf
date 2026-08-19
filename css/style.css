@@ -2056,11 +2056,10 @@ body.catalogue-page.light {
 .catalogue-icon--globe { -webkit-mask-image: url('../images/catalogue-icons/icon-globe.svg'); mask-image: url('../images/catalogue-icons/icon-globe.svg'); }
 .catalogue-icon--copy { -webkit-mask-image: url('../images/catalogue-icons/icon-copy.svg'); mask-image: url('../images/catalogue-icons/icon-copy.svg'); }
 .catalogue-icon--link { -webkit-mask-image: url('../images/catalogue-icons/icon-link.svg'); mask-image: url('../images/catalogue-icons/icon-link.svg'); }
+.catalogue-icon--discord { -webkit-mask-image: url('../images/catalogue-icons/icon-discord.svg'); mask-image: url('../images/catalogue-icons/icon-discord.svg'); }
 
 .catalogue-detail-actions {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--catalogue-border);
+  margin-top: 0;
 }
 
 .catalogue-action-button {
@@ -2084,13 +2083,15 @@ body.catalogue-page.light {
   margin-top: 20px;
 }
 
+.catalogue-info-grid { grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
+
 .catalogue-info-item,
 .catalogue-characteristic {
   min-width: 0;
-  padding: 12px;
-  border: 1px solid rgb(var(--catalogue-dealer-rgb) / .45);
-  border-radius: 8px;
-  background: rgb(var(--catalogue-dealer-rgb) / .1);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .catalogue-info-item span,
@@ -2100,6 +2101,12 @@ body.catalogue-page.light {
   color: var(--catalogue-muted);
   font-size: 12px;
 }
+
+.catalogue-info-item > span,
+.catalogue-characteristic > span { color: var(--catalogue-dealer); }
+
+.catalogue-dealership-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.catalogue-dealership-badge { display: inline-block; padding: 3px 6px; border: 1px solid rgb(var(--catalogue-dealer-rgb) / .55); border-radius: 999px; background: rgb(var(--catalogue-dealer-rgb) / .08); color: var(--catalogue-text); font-size: 11px; }
 
 .catalogue-info-item strong,
 .catalogue-characteristic strong {
@@ -2111,7 +2118,7 @@ body.catalogue-page.light {
 .catalogue-subpanel {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid var(--catalogue-border);
+  border-top: 1px solid rgb(var(--catalogue-dealer-rgb) / .42);
 }
 
 .catalogue-subpanel h2 {

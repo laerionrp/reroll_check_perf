@@ -66,3 +66,14 @@ Les prix et catégories existants ne sont pas écrasés par ce paquet.
 - syntaxe des fichiers Apps Script `.gs` : OK ;
 - contrôle des en-têtes et des colonnes des fichiers CSV/XLSX : OK ;
 - aucune source CSV/XLSX modifiée.
+
+## Finition visuelle intégrée
+
+- rubrique `Informations` séparée et placée avant les caractéristiques ;
+- séparateurs, liseré, icônes et intitulés pilotés par l'accent local de la
+  concession ;
+- valeurs conservées dans la couleur de texte normale ;
+- concessions multiples rendues sous forme de badges ;
+- actions regroupées après les améliorations disponibles ;
+- ajout de `Copier pour Discord`, qui copie un résumé Markdown compatible avec
+  Discord, sans webhook ni envoi externe.

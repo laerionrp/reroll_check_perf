@@ -72,6 +72,7 @@ const catalogueElements = {
   typeFilter: document.getElementById('catalogueTypeFilter'),
   copySummary: document.getElementById('catalogueCopySummary'),
   copyLink: document.getElementById('catalogueCopyLink'),
+  copyDiscord: document.getElementById('catalogueCopyDiscord'),
   copyFeedback: document.getElementById('catalogueCopyFeedback')
 };
 
@@ -178,7 +179,16 @@ function catalogueDealershipText(vehicle) {
 }
 
 function cataloguePrimaryDealerId(vehicle) {
-  return catalogueVehicleDealerships(vehicle)[0]?.dealership_id || vehicle?.dealership_id || '';
+  const dealerships = catalogueVehicleDealerships(vehicle);
+  const selectedDealership = catalogueState.filters.dealership;
+  const filteredDealer = dealerships.find(item => catalogueNormalize(item.dealership_id) === selectedDealership);
+  return filteredDealer?.dealership_id || dealerships[0]?.dealership_id || '';
+}
+
+function catalogueDealershipMarkup(vehicle) {
+  const dealerships = catalogueVehicleDealerships(vehicle);
+  if (!dealerships.length) return 'Non renseignée';
+  return `<span class="catalogue-dealership-badges">${dealerships.map(item => `<span class="catalogue-dealership-badge">${catalogueEscape(item.display_name || catalogueDisplayDealership(item.dealership_id))}</span>`).join('')}</span>`;
 }
 
 function catalogueDealerClass(value) {
@@ -324,7 +334,7 @@ function catalogueRenderDetail(vehicle) {
   catalogueRenderBrand(vehicle);
   catalogueRenderBadges(vehicle);
   catalogueRenderPhoto(vehicle);
-  catalogueElements.dealership.textContent = catalogueDealershipText(vehicle);
+  catalogueElements.dealership.innerHTML = catalogueDealershipMarkup(vehicle);
   catalogueElements.priceHT.textContent = catalogueMoney(vehicle.price);
   catalogueElements.vat.textContent = vehicle.is_job ? '—' : `${Math.round((Number(catalogueState.data.tvaVehicle) || 0) * 100)} %`;
   catalogueElements.priceTTC.textContent = vehicle.is_job ? '—' : catalogueMoney(Number(vehicle.price) * (1 + Number(catalogueState.data.tvaVehicle || 0)));
@@ -401,6 +411,32 @@ async function catalogueCopyText(text) {
   window.setTimeout(() => { catalogueElements.copyFeedback.textContent = ''; }, 2200);
 }
 
+function catalogueDiscordSummary(vehicle) {
+  const dealerships = catalogueVehicleDealerships(vehicle).map(item => item.display_name || catalogueDisplayDealership(item.dealership_id));
+  const characteristics = [];
+  if (vehicle.seats !== '' && vehicle.seats !== null && vehicle.seats !== undefined) characteristics.push(`**Places :** ${vehicle.seats}`);
+  if (vehicle.trunk_kg !== '' && vehicle.trunk_kg !== null && vehicle.trunk_kg !== undefined) characteristics.push(`**Coffre :** ${Number(vehicle.trunk_kg) === 0 ? 'Aucun coffre' : `${vehicle.trunk_kg} kg`}`);
+  if (vehicle.hitch !== '' && vehicle.hitch !== null && vehicle.hitch !== undefined) characteristics.push(`**Attelage :** ${vehicle.hitch === true ? 'Oui' : vehicle.hitch}`);
+  if (vehicle.license_type) characteristics.push(`**Permis :** ${vehicle.license_type}`);
+  if (vehicle.fuel_type) characteristics.push(`**Carburant :** ${vehicle.fuel_type}`);
+  const allowed = Array.isArray(vehicle.public_allowed_perfs) ? vehicle.public_allowed_perfs.map(catalogueNormalize) : [];
+  const available = cataloguePerfOrder.filter(item => allowed.includes(item)).map(item => cataloguePerfLabels[item]);
+  const priceLines = vehicle.is_job
+    ? ['**Prix HT :** —', '**TVA :** —', '**Prix TTC :** —']
+    : [`**Prix HT :** ${catalogueMoney(vehicle.price)}`, `**TVA :** ${Math.round((Number(catalogueState.data?.tvaVehicle) || 0) * 100)} %`, `**Prix TTC :** ${catalogueMoney(Number(vehicle.price) * (1 + Number(catalogueState.data?.tvaVehicle || 0)))}`];
+  return [
+    `🚗 **RCP — ${catalogueBrandName(vehicle)} ${vehicle.name || ''}**`,
+    `*${catalogueDisplayCategory(vehicle.category)}*`,
+    '', '**Informations**',
+    `> **Concessionnaire(s) :** ${dealerships.length ? dealerships.join(' · ') : 'Non renseignée'}`,
+    ...priceLines.map(line => `> ${line}`),
+    '', '**Caractéristiques**',
+    ...characteristics.map(line => `> ${line}`),
+    '', '**Améliorations disponibles**',
+    `> ${available.length ? available.join(' · ') : 'Aucune amélioration disponible'}`
+  ].join('\n');
+}
+
 function catalogueDirectVehicleId() {
   return new URLSearchParams(window.location.search).get('vehicle') || '';
 }
@@ -450,6 +486,10 @@ catalogueElements.copyLink?.addEventListener('click', () => {
   url.search = '';
   url.searchParams.set('vehicle', catalogueState.selectedId);
   catalogueCopyText(url.toString());
+});
+catalogueElements.copyDiscord?.addEventListener('click', () => {
+  const vehicle = catalogueState.vehicles.find(item => String(item.id) === String(catalogueState.selectedId));
+  if (vehicle) catalogueCopyText(catalogueDiscordSummary(vehicle));
 });
 document.querySelectorAll('.catalogue-filter-button').forEach(button => button.addEventListener('click', () => {
   const filter = button.closest('.catalogue-filter');

@@ -92,26 +92,32 @@
             </div>
           </div>
 
-          <div class="catalogue-info-grid">
-            <div class="catalogue-info-item"><span>Concession</span><strong id="catalogueDealership">-</strong></div>
-            <div class="catalogue-info-item"><span>Prix HT</span><strong id="cataloguePriceHT">-</strong></div>
-            <div class="catalogue-info-item"><span>TVA</span><strong id="catalogueVat">-</strong></div>
-            <div class="catalogue-info-item"><span>Prix TTC</span><strong id="cataloguePriceTTC">-</strong></div>
-          </div>
+          <section class="catalogue-subpanel catalogue-info-panel">
+            <h2>Informations</h2>
+            <div class="catalogue-info-grid">
+              <div class="catalogue-info-item"><span>Concessionnaire(s)</span><strong id="catalogueDealership">-</strong></div>
+              <div class="catalogue-info-item"><span>Prix HT</span><strong id="cataloguePriceHT">-</strong></div>
+              <div class="catalogue-info-item"><span>TVA</span><strong id="catalogueVat">-</strong></div>
+              <div class="catalogue-info-item"><span>Prix TTC</span><strong id="cataloguePriceTTC">-</strong></div>
+            </div>
+          </section>
 
           <section class="catalogue-subpanel">
             <h2>Caractéristiques</h2>
             <div id="catalogueCharacteristics" class="catalogue-characteristics"></div>
           </section>
-          <div class="catalogue-detail-actions">
-            <button type="button" id="catalogueCopySummary" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--copy" aria-hidden="true"></span>Copier la fiche</button>
-            <button type="button" id="catalogueCopyLink" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--link" aria-hidden="true"></span>Copier le lien</button>
-            <span id="catalogueCopyFeedback" class="catalogue-copy-feedback" role="status" aria-live="polite"></span>
-          </div>
-
           <section class="catalogue-subpanel">
             <h2>Améliorations disponibles</h2>
             <div id="cataloguePerformances" class="catalogue-performance-list"></div>
+          </section>
+          <section class="catalogue-subpanel catalogue-actions-panel">
+            <h2>Actions</h2>
+            <div class="catalogue-detail-actions">
+              <button type="button" id="catalogueCopySummary" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--copy" aria-hidden="true"></span>Copier la fiche</button>
+              <button type="button" id="catalogueCopyLink" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--link" aria-hidden="true"></span>Copier le lien</button>
+              <button type="button" id="catalogueCopyDiscord" class="catalogue-action-button"><span class="catalogue-icon catalogue-icon--discord" aria-hidden="true"></span>Copier pour Discord</button>
+              <span id="catalogueCopyFeedback" class="catalogue-copy-feedback" role="status" aria-live="polite"></span>
+            </div>
           </section>
         </div>
       </section>
